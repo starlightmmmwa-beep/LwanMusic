@@ -76,7 +76,7 @@ class Thumbnail:
             draw = ImageDraw.Draw(bg)
 
             _a = decode_text("QVJUSVNU")
-            _b = decode_text("RUxFVkVOWVRTQ0hBIFRT")
+            _b = decode_text("QVJUSVNUQk9UUw==")
 
             colors = [(255, 0, 150), (0, 200, 255), (255, 200, 0)]
 
