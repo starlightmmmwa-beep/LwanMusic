@@ -1,4 +1,4 @@
-# youtube.py - YouTube Download & Search Handler
+# youtube.py - YouTube Download & Search Handler (Fixed for Burmese Songs)
 
 import os
 import re
@@ -105,16 +105,13 @@ class YouTube:
         logger.info("🍪 Saving cookies from urls...")
         saved_count = 0
         
-        # Create cookies directory if not exists
         cookies_dir = Path("Elevenyts/cookies")
         cookies_dir.mkdir(parents=True, exist_ok=True)
         
         for url in urls:
             try:
-                # Generate unique filename
                 path = cookies_dir / f"cookie{random.randint(10000, 99999)}.txt"
                 
-                # Convert to raw URL if needed
                 if "pastebin.com" in url:
                     link = url.replace("pastebin.com", "pastebin.com/raw")
                 elif "batbin.me" in url:
@@ -133,7 +130,6 @@ class YouTube:
                             logger.error(f"❌ Cookie file empty or invalid from {url}")
                             continue
                         
-                        # Save cookie file
                         with open(path, "wb") as fw:
                             fw.write(content)
                         
@@ -162,7 +158,6 @@ class YouTube:
             logger.debug("API fallback is disabled in config")
             return None
 
-        # Extract video ID from URL
         if "v=" in link:
             video_id = link.split("v=")[-1].split("&")[0]
         elif "youtu.be" in link:
@@ -176,16 +171,13 @@ class YouTube:
         DOWNLOAD_DIR = "downloads"
         os.makedirs(DOWNLOAD_DIR, exist_ok=True)
         
-        # Set file extension based on type
         file_ext = ".mp4" if video else ".mp3"
         file_path = os.path.join(DOWNLOAD_DIR, f"{video_id}{file_ext}")
 
-        # Check if already downloaded
         if os.path.exists(file_path):
             logger.debug(f"File already exists: {file_path}")
             return file_path
 
-        # Choose endpoint based on type
         endpoint = "/vdown" if video else "/download"
         
         try:
@@ -203,11 +195,9 @@ class YouTube:
                         logger.debug(f"API returned status {response.status}")
                         return None
                     
-                    # Check content type
                     content_type = response.headers.get('content-type', '')
                     
                     if 'application/json' in content_type:
-                        # Parse JSON response
                         data = await response.json()
                         stream_url = data.get('stream_url') or data.get('url')
                         
@@ -215,7 +205,6 @@ class YouTube:
                             logger.debug("No stream URL in API response")
                             return None
                         
-                        # Download from stream URL
                         logger.info(f"📥 Downloading from stream URL: {stream_url[:50]}...")
                         async with session.get(stream_url, timeout=aiohttp.ClientTimeout(total=self.api_stream_timeout)) as file_response:
                             if file_response.status != 200:
@@ -228,7 +217,6 @@ class YouTube:
                             logger.info(f"✅ API download successful: {file_path}")
                             return file_path
                     else:
-                        # Direct binary download
                         logger.info("📥 Receiving direct binary download...")
                         with open(file_path, "wb") as f:
                             async for chunk in response.content.iter_chunked(16384):
@@ -272,12 +260,12 @@ class YouTube:
                         break
 
         if link:
-            # Remove tracking parameters
             return link.split("&si")[0].split("?si")[0]
         return None
 
+    # ========== 🔥 FIXED SEARCH FUNCTION FOR BURMESE SONGS ==========
     async def search(self, query: str, m_id: int) -> Track | None:
-        """Search for a song on YouTube."""
+        """Search for a song on YouTube - Optimized for Burmese songs."""
         cache_key = query
         current_time = asyncio.get_running_loop().time()
 
@@ -293,33 +281,113 @@ class YouTube:
                 fresh.video = False
                 return fresh
 
-        try:
-            _search = VideosSearch(query, limit=1)
-            results = await _search.next()
-        except Exception as e:
-            logger.warning(f"⚠️ YouTube search failed for '{query}': {e}")
-            return None
+        # 🔥 Check if query contains Burmese/Myanmar characters (Unicode range 1000-109F)
+        is_burmese = any(ord(char) >= 4096 and ord(char) <= 4255 for char in query)
+        
+        # Build multiple search queries for better results
+        search_queries = [query]
+        
+        if is_burmese:
+            # For Burmese songs, try multiple variations
+            search_queries.append(f"{query} song")
+            search_queries.append(f"{query} audio")
+            search_queries.append(f"{query} သီချင်း")
+            search_queries.append(f"{query} official audio")
+            search_queries.append(f"{query} official music video")
+        else:
+            # For English/other songs
+            search_queries.append(f"{query} audio")
+            search_queries.append(f"{query} official")
+        
+        # Clean query from special characters
+        clean_query = re.sub(r'[?!/\\\(\)\[\]\{\}]', '', query)
+        if clean_query != query and clean_query not in search_queries:
+            search_queries.append(clean_query)
 
-        if results and results["result"]:
-            data = results["result"][0]
-            duration = data.get("duration")
+        track = None
+        for search_query in search_queries:
+            try:
+                logger.info(f"🔍 Searching YouTube: '{search_query}'")
+                _search = VideosSearch(search_query, limit=5)  # Get more results for filtering
+                
+                # Add timeout to prevent hanging
+                results = await asyncio.wait_for(_search.next(), timeout=12.0)
+            except asyncio.TimeoutError:
+                logger.warning(f"⚠️ Search timeout for '{search_query}'")
+                continue
+            except Exception as e:
+                logger.warning(f"⚠️ YouTube search failed for '{search_query}': {e}")
+                continue
+
+            if results and results.get("result"):
+                # Filter through results to find best match
+                for data in results["result"]:
+                    duration = data.get("duration")
+                    title = data.get("title", "")
+                    title_lower = title.lower()
+                    
+                    # Skip live streams (unless query specifically asks for live)
+                    if duration is None or duration == "LIVE":
+                        if "live" not in query.lower():
+                            continue
+                    
+                    # Skip videos that are too short (< 30 sec) or too long (> 15 min)
+                    duration_sec = utils.to_seconds(duration) if duration else 0
+                    if duration_sec > 0:
+                        if duration_sec < 30:
+                            continue  # Too short (trailer, intro, etc.)
+                        if duration_sec > 900 and "official" not in query.lower():
+                            continue  # Too long (>15 min, probably full album)
+                    
+                    # For Burmese songs, prefer videos with specific keywords
+                    if is_burmese:
+                        if any(keyword in title_lower for keyword in ["official", "audio", "mv", "သီချင်း", "official audio", "official music"]):
+                            track = data
+                            break
+                        # Check if title contains Burmese characters
+                        if any(ord(c) >= 4096 and ord(c) <= 4255 for c in title):
+                            if track is None:
+                                track = data
+                    else:
+                        # For non-Burmese, take first valid match
+                        track = data
+                        break
+                
+                if track:
+                    break  # Found a track, stop trying other queries
+        
+        if track:
+            duration = track.get("duration")
             is_live = duration is None or duration == "LIVE"
-
-            track = Track(
-                id=data.get("id"),
-                channel_name=data.get("channel", {}).get("name"),
+            
+            # Get best thumbnail
+            thumbnails = track.get("thumbnails", [])
+            thumbnail_url = ""
+            if thumbnails:
+                thumbnail_url = thumbnails[-1].get("url", "").split("?")[0]
+            
+            # Get view count safely
+            view_data = track.get("viewCount", {})
+            if isinstance(view_data, dict):
+                view_count = view_data.get("short", "")
+            else:
+                view_count = str(view_data) if view_data else ""
+            
+            result_track = Track(
+                id=track.get("id"),
+                channel_name=track.get("channel", {}).get("name", ""),
                 duration=duration if not is_live else "LIVE",
                 duration_sec=0 if is_live else utils.to_seconds(duration),
                 message_id=m_id,
-                title=data.get("title")[:25],
-                thumbnail=data.get("thumbnails", [{}])[-1].get("url").split("?")[0],
-                url=data.get("link"),
-                view_count=data.get("viewCount", {}).get("short"),
+                title=track.get("title", "Unknown")[:60],  # Increased from 25
+                thumbnail=thumbnail_url,
+                url=track.get("link"),
+                view_count=view_count,
                 is_live=is_live,
             )
 
             # Cache result
-            self.search_cache[cache_key] = (track, current_time)
+            self.search_cache[cache_key] = (result_track, current_time)
             
             # Clean old cache entries
             if len(self.search_cache) > 100:
@@ -327,8 +395,12 @@ class YouTube:
                                  key=lambda k: self.search_cache[k][1])
                 del self.search_cache[oldest_key]
 
-            return replace(track)
+            logger.info(f"✅ Found: {result_track.title[:50]}...")
+            return replace(result_track)
+        
+        logger.warning(f"❌ No results found for: {query}")
         return None
+    # ========== END OF FIXED SEARCH FUNCTION ==========
 
     async def playlist(self, limit: int, user: str, url: str) -> list[Track]:
         """Extract tracks from a YouTube playlist."""
@@ -355,7 +427,7 @@ class YouTube:
                         channel_name=data.get("channel", {}).get("name", ""),
                         duration=data.get("duration", "0:00"),
                         duration_sec=utils.to_seconds(data.get("duration", "0:00")),
-                        title=(data.get("title", "Unknown")[:25]),
+                        title=(data.get("title", "Unknown")[:50]),
                         thumbnail=thumbnail_url,
                         url=link,
                         user=user,
