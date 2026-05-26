@@ -100,11 +100,11 @@ class Config:
             "https://files.catbox.moe/nhg5ko.png"  
         )
         self.PING_IMG: str = getenv(
-            "PING_IMG", "https://deposit.pictures/p/d1a935433e0e442eafe7480a9967a6f7")    
+            "PING_IMG", "https://github.com/starlightmwa-ship-it/MusicBotPhoto/blob/main/SoeMoeMusic.png?raw=true")    
         self.START_IMG: str = getenv(
-            "START_IMG", "https://deposit.pictures/p/d1a935433e0e442eafe7480a9967a6f7")  
+            "START_IMG", "https://github.com/starlightmwa-ship-it/MusicBotPhoto/blob/main/SoeMoeMusic.png?raw=true")  
         self.RADIO_IMG: str = getenv(
-            "RADIO_IMG", "https://deposit.pictures/p/d1a935433e0e442eafe7480a9967a6f7")    
+            "RADIO_IMG", "https://github.com/starlightmwa-ship-it/MusicBotPhoto/blob/main/SoeMoeMusic.png?raw=true")    
 
         # ============ MODERATION ============
         # List of usernames to exclude from admin mentions
