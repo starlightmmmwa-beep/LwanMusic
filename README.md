@@ -1,6 +1,4 @@
-<img width="1023" height="1537" alt="image" src="https://github.com/user-attachments/assets/dec995c1-f696-4f46-aac2-e8dc9ca4f402" /><div align="center">
-  <img src="[<img width="1023" height="1537" alt="image" src="https://github.com/user-attachments/assets/1cf74a24-63a1-43c6-8c4e-6b66a24a33db" />
-]" alt="˹Elevenyts ᴍᴜꜱɪᴄ˼" width="400"/>
+<img width="1023" height="1537" alt="image" src="https://github.com/user-attachments/assets/d31cf463-82d7-4e94-bda7-ae9fdf2b8163" />
   
   # 🎵 ˹SoeMoe ᴍᴜꜱɪᴄ˼
 
