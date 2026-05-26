@@ -87,7 +87,7 @@ class Thumbnail:
             draw.rounded_rectangle(
                 [x1 - 20, y1 - 10, x1 + w1 + 20, y1 + h1 + 10],
                 radius=20,
-                fill=(0, 0, 0, 50)
+                fill=(0, 0, 0, 200)
             )
 
             cx = x1
