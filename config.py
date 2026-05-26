@@ -100,11 +100,11 @@ class Config:
             "https://files.catbox.moe/nhg5ko.png"  
         )
         self.PING_IMG: str = getenv(
-            "PING_IMG", "https://files.catbox.moe/nhg5ko.png")    
+            "PING_IMG", "https://deposit.pictures/p/d1a935433e0e442eafe7480a9967a6f7")    
         self.START_IMG: str = getenv(
-            "START_IMG", "https://files.catbox.moe/nhg5ko.png")  
+            "START_IMG", "https://deposit.pictures/p/d1a935433e0e442eafe7480a9967a6f7")  
         self.RADIO_IMG: str = getenv(
-            "RADIO_IMG", "https://files.catbox.moe/nhg5ko.png")    
+            "RADIO_IMG", "https://deposit.pictures/p/d1a935433e0e442eafe7480a9967a6f7")    
 
         # ============ MODERATION ============
         # List of usernames to exclude from admin mentions
