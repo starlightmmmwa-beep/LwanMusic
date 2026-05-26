@@ -33,7 +33,7 @@ class Thumbnail:
                 "Elevenyts/helpers/Inter-Light.ttf", 22)
 
             self.watermark_font = ImageFont.truetype(
-                "Elevenyts/helpers/Raleway-Bold.ttf", 72)
+                "Elevenyts/helpers/Raleway-Bold.ttf", 35)
 
             self.small_font = ImageFont.truetype(
                 "Elevenyts/helpers/Inter-Light.ttf", 18)
@@ -75,8 +75,8 @@ class Thumbnail:
             bg = bg.filter(ImageFilter.GaussianBlur(2))
             draw = ImageDraw.Draw(bg)
 
-            _a = decode_text("QVJUSVNU")
-            _b = decode_text("QVJUSVNUQk9UUw==")
+            _a = decode_text("U29lTW9l")
+            _b = decode_text("TXVzaWNCb3Q=")
 
             colors = [(255, 0, 150), (0, 200, 255), (255, 200, 0)]
 
@@ -87,7 +87,7 @@ class Thumbnail:
             draw.rounded_rectangle(
                 [x1 - 20, y1 - 10, x1 + w1 + 20, y1 + h1 + 10],
                 radius=20,
-                fill=(0, 0, 0, 200)
+                fill=(0, 0, 0, 50)
             )
 
             cx = x1
