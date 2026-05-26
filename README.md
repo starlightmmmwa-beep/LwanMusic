@@ -1,6 +1,5 @@
 <div align="center">
-  <img src="[![Uploading image.png…]()
-]" alt="˹Elevenyts ᴍᴜꜱɪᴄ˼" width="400"/>
+  <img src="[https://github.com/starlightmwa-ship-it/Soe-Moe-Music/blob/main/SoeMoeMusic.png]" alt="˹Elevenyts ᴍᴜꜱɪᴄ˼" width="400"/>
   
   # 🎵 ˹SoeMoe ᴍᴜꜱɪᴄ˼
 
