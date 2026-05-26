@@ -1,3 +1,4 @@
+import asyncio
 import pyrogram
 from typing import Optional
 
@@ -72,7 +73,8 @@ class Bot(pyrogram.Client):
 
         # Verify logger group access
         try:
-            await self.send_message(self.logger, "🤖 ʙᴏᴛ ꜱᴛᴀʀᴛᴇᴅ")
+            msg = await self.send_message(self.logger, "🤖 ʙᴏᴛ ꜱᴛᴀʀᴛᴇᴅ")
+            asyncio.create_task(self._auto_delete(msg, 5))
             member = await self.get_chat_member(self.logger, self.id)
         except Exception as ex:
             raise SystemExit(
@@ -89,6 +91,14 @@ class Bot(pyrogram.Client):
             )
 
         logger.info(f"🤖 Bot started successfully as @{self.username}")
+
+    async def _auto_delete(self, message, delay: int = 5):
+        """Auto delete message after specified delay."""
+        await asyncio.sleep(delay)
+        try:
+            await message.delete()
+        except Exception:
+            pass
 
     async def exit(self) -> None:
         """
