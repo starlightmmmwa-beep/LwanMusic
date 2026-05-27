@@ -361,6 +361,11 @@ async def _send_broadcast(
                 except:
                     pass  # If can't get chat info, try to send anyway
 
+            # Get reply_markup (buttons) from original media message if exists
+            reply_markup = None
+            if media_message and hasattr(media_message, 'reply_markup') and media_message.reply_markup:
+                reply_markup = media_message.reply_markup
+
             # Priority 1: If media_group exists (album), send as media group
             if media_group:
                 sent_message = None
@@ -399,6 +404,17 @@ async def _send_broadcast(
                                     pinned_count += 1
                                 except:
                                     pass
+                        
+                        # Send buttons as separate message if needed (Telegram doesn't support buttons in media groups)
+                        if reply_markup and text:
+                            try:
+                                await app.send_message(
+                                    chat_id=chat_id,
+                                    text=text,
+                                    reply_markup=reply_markup
+                                )
+                            except Exception as btn_ex:
+                                failed_log += f"{chat_id} - Buttons send failed: {type(btn_ex).__name__}\n"
                     else:
                         failed_log += f"{chat_id} - No valid media in group\n"
                         await asyncio.sleep(0.3)
@@ -423,25 +439,65 @@ async def _send_broadcast(
                         # Photo is a list of PhotoSize objects, get the largest
                         file_id = media_message.photo.file_id if hasattr(
                             media_message.photo, 'file_id') else media_message.photo[-1].file_id
-                        sent_message = await app.send_photo(chat_id=chat_id, photo=file_id, caption=caption, caption_entities=caption_entities)
+                        sent_message = await app.send_photo(
+                            chat_id=chat_id, 
+                            photo=file_id, 
+                            caption=caption, 
+                            caption_entities=caption_entities,
+                            reply_markup=reply_markup
+                        )
                     elif getattr(media_message, 'video', None):
                         file_id = media_message.video.file_id
-                        sent_message = await app.send_video(chat_id=chat_id, video=file_id, caption=caption, caption_entities=caption_entities)
+                        sent_message = await app.send_video(
+                            chat_id=chat_id, 
+                            video=file_id, 
+                            caption=caption, 
+                            caption_entities=caption_entities,
+                            reply_markup=reply_markup
+                        )
                     elif getattr(media_message, 'audio', None):
                         file_id = media_message.audio.file_id
-                        sent_message = await app.send_audio(chat_id=chat_id, audio=file_id, caption=caption, caption_entities=caption_entities)
+                        sent_message = await app.send_audio(
+                            chat_id=chat_id, 
+                            audio=file_id, 
+                            caption=caption, 
+                            caption_entities=caption_entities,
+                            reply_markup=reply_markup
+                        )
                     elif getattr(media_message, 'voice', None):
                         file_id = media_message.voice.file_id
-                        sent_message = await app.send_voice(chat_id=chat_id, voice=file_id, caption=caption, caption_entities=caption_entities)
+                        sent_message = await app.send_voice(
+                            chat_id=chat_id, 
+                            voice=file_id, 
+                            caption=caption, 
+                            caption_entities=caption_entities,
+                            reply_markup=reply_markup
+                        )
                     elif getattr(media_message, 'document', None):
                         file_id = media_message.document.file_id
-                        sent_message = await app.send_document(chat_id=chat_id, document=file_id, caption=caption, caption_entities=caption_entities)
+                        sent_message = await app.send_document(
+                            chat_id=chat_id, 
+                            document=file_id, 
+                            caption=caption, 
+                            caption_entities=caption_entities,
+                            reply_markup=reply_markup
+                        )
                     elif getattr(media_message, 'animation', None):
                         file_id = media_message.animation.file_id
-                        sent_message = await app.send_animation(chat_id=chat_id, animation=file_id, caption=caption, caption_entities=caption_entities)
+                        sent_message = await app.send_animation(
+                            chat_id=chat_id, 
+                            animation=file_id, 
+                            caption=caption, 
+                            caption_entities=caption_entities,
+                            reply_markup=reply_markup
+                        )
                     elif getattr(media_message, 'sticker', None):
                         file_id = media_message.sticker.file_id
-                        sent_message = await app.send_sticker(chat_id=chat_id, sticker=file_id)
+                        sent_message = await app.send_sticker(
+                            chat_id=chat_id, 
+                            sticker=file_id,
+                            reply_markup=reply_markup
+                        )
                     else:
                         # Text-only message: send the text with formatting
                         message_text = text if text else (
@@ -449,7 +505,12 @@ async def _send_broadcast(
                         # Get text entities to preserve formatting (blockquote, bold, italic, etc.)
                         message_entities = None if text else (media_message.entities or media_message.caption_entities or None)
                         if message_text:
-                            sent_message = await app.send_message(chat_id, message_text, entities=message_entities)
+                            sent_message = await app.send_message(
+                                chat_id, 
+                                message_text, 
+                                entities=message_entities,
+                                reply_markup=reply_markup
+                            )
                         else:
                             failed_log += f"{chat_id} - Empty message\n"
                             await asyncio.sleep(0.3)
@@ -476,8 +537,12 @@ async def _send_broadcast(
                     continue
                     
             else:
-                # No media: send text message
-                sent_message = await app.send_message(chat_id, text)
+                # No media: send text message with buttons if available
+                sent_message = await app.send_message(
+                    chat_id, 
+                    text,
+                    reply_markup=reply_markup
+                )
 
                 # Handle pinning if requested
                 if sent_message and chat_id in groups:
@@ -520,6 +585,11 @@ async def _send_broadcast(
             try:
                 retry_sent = None
                 
+                # Get reply_markup for retry
+                retry_reply_markup = None
+                if media_message and hasattr(media_message, 'reply_markup') and media_message.reply_markup:
+                    retry_reply_markup = media_message.reply_markup
+                
                 # Retry media group if it was a media group
                 if media_group:
                     media_list = []
@@ -537,6 +607,17 @@ async def _send_broadcast(
                     if media_list:
                         retry_msgs = await app.send_media_group(chat_id=chat_id, media=media_list)
                         retry_sent = retry_msgs[0] if retry_msgs else None
+                        
+                        # Send buttons as separate message for media group
+                        if retry_reply_markup and text:
+                            try:
+                                await app.send_message(
+                                    chat_id=chat_id,
+                                    text=text,
+                                    reply_markup=retry_reply_markup
+                                )
+                            except Exception:
+                                pass
                 
                 # Retry single media message
                 elif media_message:
@@ -545,30 +626,79 @@ async def _send_broadcast(
                     
                     if media_message.photo:
                         file_id = media_message.photo.file_id if hasattr(media_message.photo, 'file_id') else media_message.photo[-1].file_id
-                        retry_sent = await app.send_photo(chat_id=chat_id, photo=file_id, caption=caption, caption_entities=caption_entities)
+                        retry_sent = await app.send_photo(
+                            chat_id=chat_id, 
+                            photo=file_id, 
+                            caption=caption, 
+                            caption_entities=caption_entities,
+                            reply_markup=retry_reply_markup
+                        )
                     elif getattr(media_message, 'video', None):
                         file_id = media_message.video.file_id
-                        retry_sent = await app.send_video(chat_id=chat_id, video=file_id, caption=caption, caption_entities=caption_entities)
+                        retry_sent = await app.send_video(
+                            chat_id=chat_id, 
+                            video=file_id, 
+                            caption=caption, 
+                            caption_entities=caption_entities,
+                            reply_markup=retry_reply_markup
+                        )
                     elif getattr(media_message, 'audio', None):
                         file_id = media_message.audio.file_id
-                        retry_sent = await app.send_audio(chat_id=chat_id, audio=file_id, caption=caption, caption_entities=caption_entities)
+                        retry_sent = await app.send_audio(
+                            chat_id=chat_id, 
+                            audio=file_id, 
+                            caption=caption, 
+                            caption_entities=caption_entities,
+                            reply_markup=retry_reply_markup
+                        )
                     elif getattr(media_message, 'voice', None):
                         file_id = media_message.voice.file_id
-                        retry_sent = await app.send_voice(chat_id=chat_id, voice=file_id, caption=caption, caption_entities=caption_entities)
+                        retry_sent = await app.send_voice(
+                            chat_id=chat_id, 
+                            voice=file_id, 
+                            caption=caption, 
+                            caption_entities=caption_entities,
+                            reply_markup=retry_reply_markup
+                        )
                     elif getattr(media_message, 'document', None):
                         file_id = media_message.document.file_id
-                        retry_sent = await app.send_document(chat_id=chat_id, document=file_id, caption=caption, caption_entities=caption_entities)
+                        retry_sent = await app.send_document(
+                            chat_id=chat_id, 
+                            document=file_id, 
+                            caption=caption, 
+                            caption_entities=caption_entities,
+                            reply_markup=retry_reply_markup
+                        )
                     elif getattr(media_message, 'animation', None):
                         file_id = media_message.animation.file_id
-                        retry_sent = await app.send_animation(chat_id=chat_id, animation=file_id, caption=caption, caption_entities=caption_entities)
+                        retry_sent = await app.send_animation(
+                            chat_id=chat_id, 
+                            animation=file_id, 
+                            caption=caption, 
+                            caption_entities=caption_entities,
+                            reply_markup=retry_reply_markup
+                        )
                     elif getattr(media_message, 'sticker', None):
                         file_id = media_message.sticker.file_id
-                        retry_sent = await app.send_sticker(chat_id=chat_id, sticker=file_id)
+                        retry_sent = await app.send_sticker(
+                            chat_id=chat_id, 
+                            sticker=file_id,
+                            reply_markup=retry_reply_markup
+                        )
                     else:
                         message_entities = None if text else (media_message.entities or media_message.caption_entities or None)
-                        retry_sent = await app.send_message(chat_id, text, entities=message_entities)
+                        retry_sent = await app.send_message(
+                            chat_id, 
+                            text, 
+                            entities=message_entities,
+                            reply_markup=retry_reply_markup
+                        )
                 else:
-                    retry_sent = await app.send_message(chat_id, text)
+                    retry_sent = await app.send_message(
+                        chat_id, 
+                        text,
+                        reply_markup=retry_reply_markup
+                    )
 
                 # Handle pinning on retry
                 if retry_sent and chat_id in groups:
