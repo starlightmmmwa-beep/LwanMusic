@@ -169,6 +169,23 @@ class TgCall(PyTgCalls):
         # - Otherwise: send to same chat as audio
         target_chat_for_messages = message_chat_id if message_chat_id else chat_id
 
+        # ✅ FIX: Delete previous player message before sending new one
+        try:
+            previous_media = queue.get_current(chat_id)
+            if previous_media and hasattr(previous_media, 'message_id') and previous_media.message_id:
+                try:
+                    await app.delete_messages(
+                        chat_id=target_chat_for_messages,
+                        message_ids=previous_media.message_id,
+                        revoke=True
+                    )
+                    previous_media.message_id = 0
+                    logger.debug(f"Deleted previous player message for {chat_id}")
+                except Exception as e:
+                    logger.debug(f"Could not delete previous player message: {e}")
+        except Exception:
+            pass
+
         # Generate thumbnail only if THUMB_GEN is enabled, otherwise use default
         if config.THUMB_GEN and isinstance(media, Track):
             _thumb = await thumb.generate(media)
@@ -537,6 +554,20 @@ class TgCall(PyTgCalls):
 
                 target_chat = message_chat_id if message_chat_id else chat_id
 
+                # ✅ FIX: Delete the FINISHED song's player message before moving to next
+                finished_media = queue.get_current(chat_id)
+                if finished_media and hasattr(finished_media, 'message_id') and finished_media.message_id:
+                    try:
+                        await app.delete_messages(
+                            chat_id=target_chat,
+                            message_ids=finished_media.message_id,
+                            revoke=True
+                        )
+                        finished_media.message_id = 0
+                        logger.debug(f"Deleted finished player message for {chat_id}")
+                    except Exception as e:
+                        logger.debug(f"Could not delete finished message in {chat_id}: {e}")
+
                 loop_mode = await db.get_loop(chat_id)
 
                 if loop_mode == 1:
@@ -582,18 +613,6 @@ class TgCall(PyTgCalls):
                             await self.leave_call(chat_id)
                             await db.rm_chat(chat_id)
                         return
-
-                try:
-                    if media and media.message_id:
-                        await app.delete_messages(
-                            chat_id=chat_id,
-                            message_ids=media.message_id,
-                            revoke=True,
-                        )
-                        media.message_id = 0
-                except Exception as e:
-                    logger.debug(
-                        f"Could not delete previous message in {chat_id}: {e}")
 
                 if not media:
                     if config.AUTO_END:
