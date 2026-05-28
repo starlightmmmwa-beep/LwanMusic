@@ -33,7 +33,7 @@ class Thumbnail:
                 "Elevenyts/helpers/Inter-Light.ttf", 22)
 
             self.watermark_font = ImageFont.truetype(
-                "Elevenyts/helpers/Raleway-Bold.ttf", 65)
+                "Elevenyts/helpers/Raleway-Bold.ttf", 55)
 
             self.small_font = ImageFont.truetype(
                 "Elevenyts/helpers/Inter-Light.ttf", 18)
@@ -80,55 +80,50 @@ class Thumbnail:
 
             colors = [(255, 0, 150), (0, 200, 255), (255, 200, 0)]
 
-            # ========== SoeMoe Logo (ဘယ်ဘက်အပေါ် - အလယ်ချိန်) ==========
+            # ========== SoeMoe Logo (ဘယ်ဘက်အပေါ် - ဘောင်မပါ) ==========
             w1 = self.watermark_font.getlength(_a)
             h1 = self.watermark_font.size
             
-            # ဘောင်နေရာ
+            # နေရာ
             x1, y1 = 40, 30
+                                   
+            # ✅ စာသားကို တိုက်ရိုက်ဆွဲမယ် (အရိပ်အနည်းငယ်ထည့်မယ်)
+            # အရိပ်အတွက် (Shadow effect)
+            for offset_x, offset_y, shadow_color in [(-1, -1, (0,0,0,200)), (1, 1, (0,0,0,200))]:
+                cx = x1 + offset_x
+                cy = y1 + offset_y
+                for i, char in enumerate(_a):
+                    draw.text((cx, cy), char, font=self.watermark_font, fill=shadow_color)
+                    cx += self.watermark_font.getlength(char)
             
-            # ဘောင်ဆွဲမယ်
-            draw.rounded_rectangle(
-                [x1 - 20, y1 - 10, x1 + w1 + 20, y1 + h1 + 10],
-                radius=20,
-                fill=(0, 0, 0, 200)
-            )
-            
-            # ✅ စာသားကို ဘောင်ရဲ့အလယ်မှာထားမယ်
-            box_center_x = x1 + (w1 // 2)
-            box_center_y = y1 + (h1 // 2)
-            text_start_x = box_center_x - (w1 // 2)
-            text_start_y = box_center_y - (h1 // 2)
-            
-            cx = text_start_x
+            # အဓိက စာသား
+            cx = x1
             for i, char in enumerate(_a):
-                draw.text((cx, text_start_y), char, font=self.watermark_font, fill=colors[i % 3])
+                draw.text((cx, y1), char, font=self.watermark_font, fill=colors[i % 3])
                 cx += self.watermark_font.getlength(char)
 
-            # ========== MusicBot Logo (ညာဘက်အောက် - အလယ်ချိန်) ==========
+            # ========== MusicBot Logo (ညာဘက်အောက် - ဘောင်မပါ) ==========
             w2 = self.watermark_font.getlength(_b)
             h2 = self.watermark_font.size
             
-            # ဘောင်နေရာ (ညာဘက်အောက်ထောင့်)
+            # နေရာ (ညာဘက်အောက်ထောင့်)
             x2 = 1280 - w2 - 40
             y2 = 720 - h2 - 30
             
-            # ဘောင်ဆွဲမယ်
-            draw.rounded_rectangle(
-                [x2 - 20, y2 - 10, x2 + w2 + 20, y2 + h2 + 10],
-                radius=20,
-                fill=(0, 0, 0, 200)
-            )
+            # ❌ ဘောင်မဆွဲတော့ဘူး (ဖျက်ပြီး)
             
-            # ✅ စာသားကို ဘောင်ရဲ့အလယ်မှာထားမယ်
-            box_center_x2 = x2 + (w2 // 2)
-            box_center_y2 = y2 + (h2 // 2)
-            text_start_x2 = box_center_x2 - (w2 // 2)
-            text_start_y2 = box_center_y2 - (h2 // 2)
+            # အရိပ်အတွက် (Shadow effect)
+            for offset_x, offset_y, shadow_color in [(-1, -1, (0,0,0,200)), (1, 1, (0,0,0,200))]:
+                cx = x2 + offset_x
+                cy = y2 + offset_y
+                for i, char in enumerate(_b):
+                    draw.text((cx, cy), char, font=self.watermark_font, fill=shadow_color)
+                    cx += self.watermark_font.getlength(char)
             
-            cx = text_start_x2
+            # အဓိက စာသား
+            cx = x2
             for i, char in enumerate(_b):
-                draw.text((cx, text_start_y2), char, font=self.watermark_font, fill=colors[i % 3])
+                draw.text((cx, y2), char, font=self.watermark_font, fill=colors[i % 3])
                 cx += self.watermark_font.getlength(char)
 
             # ========== Gradient Overlay ==========
