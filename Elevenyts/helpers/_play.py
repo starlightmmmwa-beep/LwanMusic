@@ -1,10 +1,13 @@
 # _play.py - Play Command Helper & Validator
 
 import asyncio
+import logging
 
 from pyrogram import enums, errors, types
 
 from Elevenyts import app, config, db, queue, yt
+
+logger = logging.getLogger(__name__)
 
 
 def checkUB(play):
@@ -14,7 +17,6 @@ def checkUB(play):
             try:
                 return await m.reply_text(text)
             except (errors.ChatWriteForbidden, errors.ChatSendPlainForbidden):
-                # Chat doesn't allow text messages - silently return
                 return None
             except Exception:
                 return None
@@ -51,7 +53,6 @@ def checkUB(play):
         video = video_requested
         
         url = yt.url(m)
-        # Only validate URL if not replying to media (Telegram files have t.me URLs)
         if url and not m.reply_to_message and not yt.valid(url):
             return await m.reply_text(m.lang["play_unsupported"])
 
@@ -65,6 +66,25 @@ def checkUB(play):
             ):
                 await safe_reply(m.lang["play_admin"])
                 return
+
+        # ========== ✅ VOICE CHAT CHECK (FANCY FONT) ==========
+        try:
+            call = await app.get_call(m.chat.id)
+            if not call:
+                await safe_reply(
+                    "<b>❌ ɴᴏ ᴀᴄᴛɪᴠᴇ ᴠᴏɪᴄᴇ ᴄʜᴀᴛ ꜰᴏᴜɴᴅ!</b>\n\n"
+                    "ᴘʟᴇᴀꜱᴇ ꜱᴛᴀʀᴛ ᴀ ᴠᴏɪᴄᴇ ᴄʜᴀᴛ ꜰɪʀꜱᴛ ʙᴇꜰᴏʀᴇ ᴘʟᴀʏɪɴɢ ᴍᴜꜱɪᴄ.\n\n"
+                    "👉 <i>ᴀᴅᴍɪɴꜱ ᴄᴀɴ ꜱᴛᴀʀᴛ ᴠᴏɪᴄᴇ ᴄʜᴀᴛ ꜰʀᴏᴍ ɢʀᴏᴜᴘ ꜱᴇᴛᴛɪɴɢꜱ.</i>"
+                )
+                return
+        except Exception:
+            await safe_reply(
+                "<b>❌ ᴠᴏɪᴄᴇ ᴄʜᴀᴛ ɪꜱ ɴᴏᴛ ᴀᴄᴛɪᴠᴇ!</b>\n\n"
+                "ᴘʟᴇᴀꜱᴇ ꜱᴛᴀʀᴛ ᴀ ᴠᴏɪᴄᴇ ᴄʜᴀᴛ ꜰɪʀꜱᴛ ʙᴇꜰᴏʀᴇ ᴘʟᴀʏɪɴɢ ᴍᴜꜱɪᴄ.\n\n"
+                "👉 <i>ᴄʟɪᴄᴋ ᴛʜᴇ ᴠᴏɪᴄᴇ ᴄʜᴀᴛ ʙᴜᴛᴛᴏɴ ɪɴ ᴛʜᴇ ɢʀᴏᴜᴘ ᴛᴏ ꜱᴛᴀʀᴛ.</i>"
+            )
+            return
+        # ========== END VOICE CHAT CHECK ==========
 
         if m.chat.id not in db.active_calls:
             client = await db.get_client(m.chat.id)
