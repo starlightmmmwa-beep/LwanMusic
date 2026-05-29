@@ -405,7 +405,7 @@ async def _help(_, query: types.CallbackQuery):
     help_texts = {
         "admins": query.lang["help_admins"],
         "auth": query.lang["help_auth"],
-        "broadcast": query.lang["help_sudo"],  # Broadcast is sudo feature
+        "broadcast": query.lang["help_sudo"],
         "blchat": query.lang["help_blchat"],
         "bluser": query.lang["help_bluser"],
         "gban": query.lang["help_gban"],
@@ -454,3 +454,13 @@ async def _playmode(_, query: types.CallbackQuery):
             chat_id,
         )
     )
+    
+@app.on_callback_query(filters.regex("^help_play$") & ~app.bl_users)
+@lang.language()
+async def help_play_callback(_, query):
+    await query.answer()
+    help_text = query.lang.get("help_play", "🎵 Play commands:\n/play [song]\n/vplay [video]")
+    try:
+        await query.edit_message_caption(caption=help_text, reply_markup=buttons.help_markup(query.lang, True))
+    except Exception:
+        await query.edit_message_text(text=help_text, reply_markup=buttons.help_markup(query.lang, True))
