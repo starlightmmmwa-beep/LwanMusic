@@ -77,13 +77,24 @@ def playlist_to_queue(chat_id: int, tracks: list) -> str:
     """
     text = "<blockquote expandable>"
     for track in tracks:
-        pos = queue.add(chat_id, track)  # Add track to queue (returns 0-based index)
-        text += f"<b>{pos}.</b> {track.title}\n"  # Show actual queue position
-    text = text[:1948] + "</blockquote>"  # Limit message length
+        pos = queue.add(chat_id, track)
+        text += f"<b>{pos}.</b> {track.title}\n"
+    text = text[:1948] + "</blockquote>"
     return text
 
-# Global flag to enable/disable cloud storage (can be set from config later)
+# Global flag to enable/disable cloud storage
 ENABLE_CLOUD_STORAGE = getattr(config, 'ENABLE_CLOUD_STORAGE', True)
+
+
+async def auto_delete_message(msg, delay: int = 30):
+    """Auto delete a message after delay seconds"""
+    await asyncio.sleep(delay)
+    try:
+        await msg.delete()
+        logger.debug(f"Auto-deleted queue message: {msg.id}")
+    except Exception:
+        pass
+
 
 @app.on_message(
     filters.command(
@@ -119,7 +130,7 @@ async def play_hndlr(
     
     # Handle channel play mode
     chat_id = m.chat.id
-    message_chat_id = m.chat.id  # Store original group chat ID for thumbnail
+    message_chat_id = m.chat.id
     if cplay:
         channel_id = await db.get_cmode(m.chat.id)
         if channel_id is None:
@@ -140,19 +151,14 @@ async def play_hndlr(
                 "Please make sure I'm admin in the channel and channel exists.</blockquote>"
             )
         
-        # Auto-join assistant to channel if not already a member
         client = await db.get_client(channel_id)
         try:
-            # Check if assistant is in the channel
             await app.get_chat_member(channel_id, client.id)
         except Exception:
-            # Assistant not in channel, try to join
             try:
-                # For channels, we need an invite link
                 if chat.username:
                     invite_link = chat.username
                 else:
-                    # Try to get/create invite link
                     try:
                         invite_link = chat.invite_link
                         if not invite_link:
@@ -164,16 +170,11 @@ async def play_hndlr(
                             f"to the channel as an admin with permission to join.</blockquote>"
                         )
                 
-                # Show joining message
                 join_msg = await safe_reply(m,
                     f"<blockquote>🔌 Joining assistant to channel...</blockquote>"
                 )
-                
-                # Try to join the channel
                 await client.join_chat(invite_link)
-                await asyncio.sleep(1)  # Give it time to fully join
-                
-                # Delete joining message
+                await asyncio.sleep(1)
                 try:
                     await join_msg.delete()
                 except:
@@ -188,7 +189,6 @@ async def play_hndlr(
                     f"Error: {error_str}</blockquote>"
                 )
 
-    # Select emoji for this play session
     play_emoji = m.lang["play_emoji"]
     
     try:
@@ -198,20 +198,18 @@ async def play_hndlr(
         try:
             sent = await safe_reply(m, m.lang["play_searching"].format(play_emoji))
         except FloodWait as e2:
-            # If still flood wait, wait longer and give up gracefully
             await asyncio.sleep(e2.value)
-            return  # Abort silently
+            return
         except Exception:
-            return  # Abort silently
+            return
     except Exception:
-        return  # If we can't even send initial message, abort
+        return
     
     mention = m.from_user.mention
     media = tg.get_media(m.reply_to_message) if m.reply_to_message else None
     tracks = []
-    file = None  # Initialize file variable
+    file = None
 
-    # Check media first (Telegram files) before URL extraction
     if media:
         setattr(sent, "lang", m.lang)
         file = await tg.download(m.reply_to_message, sent)
@@ -267,7 +265,6 @@ async def play_hndlr(
         for track in tracks:
             track.video = True
 
-    # Skip duration check for live streams
     if not file.is_live and file.duration_sec > config.DURATION_LIMIT:
         await safe_edit(
             sent,
@@ -282,16 +279,13 @@ async def play_hndlr(
     if force:
         queue.force_add(chat_id, file)
     else:
-        position = queue.add(chat_id, file)  # Returns 0-based index
+        position = queue.add(chat_id, file)
 
         if await db.get_call(chat_id):
-            # When call is active, position 0 is currently playing
-            # So actual waiting position is: position (e.g., 1st waiting = index 1)
-            # Display as 1-based for users: index 1 → "1st in queue"
             await safe_edit(
                 sent,
                 m.lang["play_queued"].format(
-                    position,  # Shows waiting position: 1, 2, 3...
+                    position,
                     file.url,
                     file.title,
                     file.duration,
@@ -301,6 +295,10 @@ async def play_hndlr(
                     chat_id, file.id, m.lang["play_now"]
                 ),
             )
+            
+            # ✅ Auto-delete queue message after 30 seconds
+            asyncio.create_task(auto_delete_message(sent, 30))
+            
             if tracks:
                 added = playlist_to_queue(chat_id, tracks)
                 try:
@@ -309,15 +307,12 @@ async def play_hndlr(
                         text=m.lang["playlist_queued"].format(len(tracks)) + added,
                     )
                 except Exception:
-                    # Can't send message, continue anyway
                     pass
             
-            # ✨ NEW: Start preloading queued tracks in background
             try:
                 from Elevenyts import preload
                 asyncio.create_task(preload.start_preload(chat_id, count=2))
             except Exception:
-                # Non-critical, continue without preload
                 pass
             
             return
@@ -340,23 +335,18 @@ async def play_hndlr(
             return
 
     # ========== PROXY DOWNLOAD METHOD (TELEGRAM CLOUD STORAGE) ==========
-    # Only use cloud storage for video files (not audio) when enabled
     if ENABLE_CLOUD_STORAGE and video and file.file_path and os.path.exists(file.file_path):
         try:
-            # Import cloud manager dynamically to avoid circular imports
             from Elevenyts.core.telegram_cloud import cloud_manager
             
-            # Get file size for logging
             file_size_mb = os.path.getsize(file.file_path) / (1024 * 1024)
             logger.info(f"☁️ Uploading {file_size_mb:.1f}MB video to Telegram Cloud...")
             
             await safe_edit(sent, "☁️ Uploading to cloud for better streaming...")
             
-            # Upload to Telegram Cloud (Saved Messages)
             cloud_file_id = await cloud_manager.upload_video_to_cloud(file.file_path, file.title)
             
             if cloud_file_id:
-                # Success! Delete local file immediately to free disk space
                 try:
                     os.remove(file.file_path)
                     file.file_path = None
@@ -366,17 +356,14 @@ async def play_hndlr(
                 
                 await safe_edit(sent, "🎬 Streaming from cloud...")
                 
-                # Stream directly from Telegram Cloud using file_id
                 success = await cloud_manager.stream_from_cloud(chat_id, cloud_file_id)
                 
                 if success:
-                    # Send success message with controls
                     try:
                         await sent.delete()
                     except Exception:
                         pass
                     
-                    # Send now playing message with controls
                     text = m.lang["play_media"].format(
                         file.url,
                         file.title,
@@ -385,7 +372,6 @@ async def play_hndlr(
                     )
                     keyboard = buttons.controls(chat_id)
                     
-                    # Send photo with controls
                     _thumb = config.DEFAULT_THUMB
                     if config.THUMB_GEN and isinstance(file, Track) and hasattr(file, 'thumbnail') and file.thumbnail:
                         try:
@@ -409,28 +395,23 @@ async def play_hndlr(
                 await safe_edit(sent, "⚠️ Cloud upload failed, using local playback...")
                 
         except ImportError:
-            # telegram_cloud.py not created yet
             logger.debug("telegram_cloud.py not found, using local playback only")
         except Exception as e:
             logger.error(f"Cloud storage error: {e}, falling back to local playback")
             await safe_edit(sent, "⚠️ Cloud error, using local playback...")
     # ========== END PROXY DOWNLOAD METHOD ==========
 
-    # Fallback to normal local playback (if cloud is disabled or failed)
     try:
-        # Pass message_chat_id only if it's different from chat_id (channel play mode)
         await tune.play_media(
             chat_id=chat_id, 
             message=sent, 
             media=file, 
             message_chat_id=message_chat_id if chat_id != message_chat_id else None
         )
-        # React with emoji on successful play
         try:
             emoji = m.lang["play_emoji"]
             await m.react(emoji)
         except Exception:
-            # If reaction fails, continue anyway (not critical)
             pass
     except Exception as e:
         error_msg = str(e)
@@ -460,5 +441,4 @@ async def play_hndlr(
             text=m.lang["playlist_queued"].format(len(tracks)) + added,
         )
     except Exception:
-        # Can't send message, but playback is working
         pass
