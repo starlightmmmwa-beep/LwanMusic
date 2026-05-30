@@ -117,7 +117,7 @@ class Config:
 
     def _parse_video_height(self) -> int:
         """Parse and validate video height configuration."""
-        default_height = 1080
+        default_height = 480
         raw_value = getenv("VIDEO_MAX_HEIGHT", str(default_height))
         try:
             height = int(raw_value)
@@ -127,7 +127,7 @@ class Config:
         if height <= 0:
             return 0
 
-        return max(480, min(height, 2160))
+        return max(240, min(height, 2160))
 
     def _parse_excluded_chats(self) -> List[int]:
         """
