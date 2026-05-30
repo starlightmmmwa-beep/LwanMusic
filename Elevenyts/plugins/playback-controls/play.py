@@ -340,59 +340,46 @@ async def play_hndlr(
             from Elevenyts.core.telegram_cloud import cloud_manager
             
             file_size_mb = os.path.getsize(file.file_path) / (1024 * 1024)
-            logger.info(f"☁️ Uploading {file_size_mb:.1f}MB video to Telegram Cloud...")
+            logger.info(f"☁️ Processing {file_size_mb:.1f}MB video (360p conversion + cloud upload)...")
             
-            await safe_edit(sent, "☁️ Uploading to cloud for better streaming...")
+            await safe_edit(sent, "🔄 Processing video (convert to 360p & upload to cloud)...")
             
-            cloud_file_id = await cloud_manager.upload_video_to_cloud(file.file_path, file.title)
+            # ✅ NEW: Use process_video() which does convert + upload + stream
+            success = await cloud_manager.process_video(file.file_path, file.title, chat_id)
             
-            if cloud_file_id:
+            if success:
                 try:
-                    os.remove(file.file_path)
-                    file.file_path = None
-                    logger.info(f"🗑️ Deleted local file after cloud upload (freed {file_size_mb:.1f}MB)")
-                except Exception as e:
-                    logger.warning(f"Could not delete local file: {e}")
+                    await sent.delete()
+                except Exception:
+                    pass
                 
-                await safe_edit(sent, "🎬 Streaming from cloud...")
+                # Send now playing message with controls
+                text = m.lang["play_media"].format(
+                    file.url,
+                    file.title,
+                    file.duration,
+                    m.from_user.mention,
+                )
+                keyboard = buttons.controls(chat_id)
                 
-                success = await cloud_manager.stream_from_cloud(chat_id, cloud_file_id)
-                
-                if success:
+                _thumb = config.DEFAULT_THUMB
+                if config.THUMB_GEN and isinstance(file, Track) and hasattr(file, 'thumbnail') and file.thumbnail:
                     try:
-                        await sent.delete()
+                        from Elevenyts.helpers import thumb
+                        _thumb = await thumb.generate(file)
                     except Exception:
                         pass
-                    
-                    text = m.lang["play_media"].format(
-                        file.url,
-                        file.title,
-                        file.duration,
-                        m.from_user.mention,
-                    )
-                    keyboard = buttons.controls(chat_id)
-                    
-                    _thumb = config.DEFAULT_THUMB
-                    if config.THUMB_GEN and isinstance(file, Track) and hasattr(file, 'thumbnail') and file.thumbnail:
-                        try:
-                            from Elevenyts.helpers import thumb
-                            _thumb = await thumb.generate(file)
-                        except Exception:
-                            pass
-                    
-                    await app.send_photo(
-                        chat_id=chat_id,
-                        photo=_thumb,
-                        caption=text,
-                        reply_markup=keyboard,
-                    )
-                    return
-                else:
-                    logger.warning("Cloud streaming failed, falling back to local playback")
-                    await safe_edit(sent, "⚠️ Cloud streaming failed, trying local playback...")
+                
+                await app.send_photo(
+                    chat_id=chat_id,
+                    photo=_thumb,
+                    caption=text,
+                    reply_markup=keyboard,
+                )
+                return
             else:
-                logger.warning("Cloud upload failed, falling back to local playback")
-                await safe_edit(sent, "⚠️ Cloud upload failed, using local playback...")
+                logger.warning("Cloud processing failed, falling back to local playback")
+                await safe_edit(sent, "⚠️ Cloud processing failed, trying local playback...")
                 
         except ImportError:
             logger.debug("telegram_cloud.py not found, using local playback only")
