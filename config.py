@@ -97,11 +97,11 @@ class Config:
         # ============ IMAGE URLS (ပုံ ၅ ပုံ လည်ပတ်သုံးရန်) ============
         # ပုံ ၅ ပုံရဲ့ raw URL စာရင်း
         self.IMAGE_LIST: List[str] = [
-            "https://github.com/starlightmwa-ship-it/Photo/blob/main/SoeMoe/SoeMoeMusic%20(1).png?raw=true",
-            "https://github.com/starlightmwa-ship-it/Photo/blob/main/SoeMoe/SoeMoeMusic%20(2).png?raw=true",
-            "https://github.com/starlightmwa-ship-it/Photo/blob/main/SoeMoe/SoeMoeMusic%20(3).png?raw=true",
-            "https://github.com/starlightmwa-ship-it/Photo/blob/main/SoeMoe/SoeMoeMusic%20(4).png?raw=true",
-            "https://github.com/starlightmwa-ship-it/Photo/blob/main/SoeMoe/SoeMoeMusic%20(5).png?raw=true",
+            "https://github.com/starlightmwamm-droid/Photo/blob/main/Lwan/LwanMusic%20(1).png?raw=true",
+            "https://github.com/starlightmwamm-droid/Photo/blob/main/Lwan/LwanMusic%20(2).png?raw=true",
+            "https://github.com/starlightmwamm-droid/Photo/blob/main/Lwan/LwanMusic%20(3).png?raw=true",
+            "https://github.com/starlightmwamm-droid/Photo/blob/main/Lwan/LwanMusic%20(4).png?raw=true",
+            "https://github.com/starlightmwamm-droid/Photo/blob/main/Lwan/LwanMusic%20(5).png?raw=true",
         ]
 
         # ============ MODERATION ============
