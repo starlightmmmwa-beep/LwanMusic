@@ -26,9 +26,11 @@ class YouTube:
         self.checked = False
         self.warned = False
 
-        # Get API URL from config
-        self.api_url = config.YOUTUBE_API_URL
-        self.enable_api_fallback = config.ENABLE_API_FALLBACK
+        # Get API configuration from config
+        self.api_url = config.ARTISTBOTS_API_URL
+        self.artistbots_key = config.ARTISTBOTS_KEY
+        self.enable_api = config.ENABLE_API
+        self.enable_cookies_fallback = config.ENABLE_COOKIES_FALLBACK
         self.api_timeout = config.API_TIMEOUT
         self.api_stream_timeout = config.API_STREAM_TIMEOUT
 
