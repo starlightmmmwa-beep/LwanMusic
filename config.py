@@ -77,17 +77,12 @@ class Config:
         # Maximum video height (in pixels) when downloading /vplay media
         self.VIDEO_MAX_HEIGHT: int = self._parse_video_height()
 
-        # ============ YOUTUBE API CONFIGURATION (NEW) ============
-        # YouTube download API URL (Railway/self-hosted)
-        self.YOUTUBE_API_URL: str = getenv("YOUTUBE_API_URL", "https://artistbots.onrender.com")
-        
-        # Enable/disable API fallback when cookies fail
-        self.ENABLE_API_FALLBACK: bool = self._str_to_bool(getenv("ENABLE_API_FALLBACK", "True"))
-        
-        # API timeout in seconds for downloads
+        # ArtistBots API
+        self.ARTISTBOTS_API_URL: str = getenv("ARTISTBOTS_API_URL", "https://artistbots-api.onrender.com")
+        self.ARTISTBOTS_KEY: str = getenv("ARTISTBOTS_KEY", "")
+        self.ENABLE_API: bool = self._str_to_bool(getenv("ENABLE_API", "True"))
+        self.ENABLE_COOKIES_FALLBACK: bool = self._str_to_bool(getenv("ENABLE_COOKIES_FALLBACK", "True"))
         self.API_TIMEOUT: int = int(getenv("API_TIMEOUT", "60"))
-        
-        # API timeout for stream downloads (longer for large files)
         self.API_STREAM_TIMEOUT: int = int(getenv("API_STREAM_TIMEOUT", "300"))
 
         # ============ YOUTUBE COOKIES ============
@@ -97,11 +92,11 @@ class Config:
         # ============ IMAGE URLS (ပုံ ၅ ပုံ လည်ပတ်သုံးရန်) ============
         # ပုံ ၅ ပုံရဲ့ raw URL စာရင်း
         self.IMAGE_LIST: List[str] = [
-            "https://github.com/starlightmwamm-droid/Photo/blob/main/Lwan/LwanMusic%20(1).png?raw=true",
-            "https://github.com/starlightmwamm-droid/Photo/blob/main/Lwan/LwanMusic%20(2).png?raw=true",
-            "https://github.com/starlightmwamm-droid/Photo/blob/main/Lwan/LwanMusic%20(3).png?raw=true",
-            "https://github.com/starlightmwamm-droid/Photo/blob/main/Lwan/LwanMusic%20(4).png?raw=true",
-            "https://github.com/starlightmwamm-droid/Photo/blob/main/Lwan/LwanMusic%20(5).png?raw=true",
+            "https://github.com/starlightmwa-ship-it/Photo/blob/main/SoeMoe/SoeMoeMusic%20(1).png?raw=true",
+            "https://github.com/starlightmwa-ship-it/Photo/blob/main/SoeMoe/SoeMoeMusic%20(2).png?raw=true",
+            "https://github.com/starlightmwa-ship-it/Photo/blob/main/SoeMoe/SoeMoeMusic%20(3).png?raw=true",
+            "https://github.com/starlightmwa-ship-it/Photo/blob/main/SoeMoe/SoeMoeMusic%20(4).png?raw=true",
+            "https://github.com/starlightmwa-ship-it/Photo/blob/main/SoeMoe/SoeMoeMusic%20(5).png?raw=true",
         ]
 
         # ============ MODERATION ============
@@ -117,7 +112,7 @@ class Config:
 
     def _parse_video_height(self) -> int:
         """Parse and validate video height configuration."""
-        default_height = 720
+        default_height = 1080
         raw_value = getenv("VIDEO_MAX_HEIGHT", str(default_height))
         try:
             height = int(raw_value)
@@ -127,7 +122,7 @@ class Config:
         if height <= 0:
             return 0
 
-        return max(360, min(height, 2160))
+        return max(480, min(height, 2160))
 
     def _parse_excluded_chats(self) -> List[int]:
         """
@@ -148,44 +143,17 @@ class Config:
         return chat_ids
 
     def _parse_cookies(self) -> List[str]:
-        """
-        Parse YouTube cookie URLs from space-separated string.
-        Supports multiple cookie sources (batbin, pastebin, etc.)
-
-        Returns:
-            List[str]: List of valid cookie URLs.
-        """
         cookie_str = getenv("COOKIE_URL", "")
         if not cookie_str:
             return []
-
         valid_sources = ["batbin.me", "pastebin.com", "paste.ee", "rentry.co"]
-        return [
-            url.strip()
-            for url in cookie_str.split()
-            if url.strip() and any(source in url for source in valid_sources)
-        ]
+        return [url.strip() for url in cookie_str.split() if url.strip() and any(source in url for source in valid_sources)]
 
     @staticmethod
     def _str_to_bool(value: str) -> bool:
-        """
-        Convert string to boolean value.
-
-        Args:
-            value: String representation of boolean.
-
-        Returns:
-            bool: Converted boolean value.
-        """
         return value.lower() in ("true", "1", "yes", "y", "on")
 
     def check(self) -> None:
-        """
-        Validate that all required environment variables are set.
-
-        Raises:
-            SystemExit: If any required variables are missing.
-        """
         required_vars = {
             "API_ID": self.API_ID,
             "API_HASH": self.API_HASH,
@@ -195,17 +163,12 @@ class Config:
             "OWNER_ID": self.OWNER_ID,
             "STRING_SESSION": self.SESSION1,
         }
-
-        missing = [
-            name for name, value in required_vars.items()
-            if not value or (isinstance(value, int) and value == 0)
-        ]
-
+        missing = [name for name, value in required_vars.items() if not value or (isinstance(value, int) and value == 0)]
         if missing:
-            raise SystemExit(
-                f"❌ Missing required environment variables: {', '.join(missing)}\n"
-                f"Please check your .env file and ensure all required variables are set."
-            )
+            raise SystemExit(f"Missing required env vars: {', '.join(missing)}")
+        
+        if self.ENABLE_API and not self.ARTISTBOTS_KEY:
+            print("Warning: ENABLE_API is True but ARTISTBOTS_KEY is not set")
 
     # ============ IMAGE ROTATION METHODS ============
     
