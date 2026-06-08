@@ -79,7 +79,7 @@ class Config:
 
         # ============ YOUTUBE API CONFIGURATION (NEW) ============
         # YouTube download API URL (Railway/self-hosted)
-        self.YOUTUBE_API_URL: str = getenv("YOUTUBE_API_URL", "https://artistbots-api.onrender.com")
+        self.YOUTUBE_API_URL: str = getenv("YOUTUBE_API_URL", "https://artistbots.onrender.com/")
         
         # Enable/disable API fallback when cookies fail
         self.ENABLE_API_FALLBACK: bool = self._str_to_bool(getenv("ENABLE_API_FALLBACK", "True"))
