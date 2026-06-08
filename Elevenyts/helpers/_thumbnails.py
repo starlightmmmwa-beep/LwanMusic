@@ -32,13 +32,15 @@ class Thumbnail:
             self.regular_font = ImageFont.truetype(
                 "Elevenyts/helpers/Inter-Light.ttf", 22)
 
+            # ========== Hoshiko Satsuki font ကိုသုံးမယ် ==========
             self.watermark_font = ImageFont.truetype(
-                "Elevenyts/helpers/Raleway-Bold.ttf", 55)
+                "Elevenyts/helpers/Hoshiko Satsuki.ttf", 55)
 
             self.small_font = ImageFont.truetype(
                 "Elevenyts/helpers/Inter-Light.ttf", 18)
 
-        except OSError:
+        except OSError as e:
+            print(f"Font loading error: {e}")
             self.title_font = self.regular_font = self.watermark_font = self.small_font = ImageFont.load_default()
 
     async def save_thumb(self, output_path: str, url: str) -> str:
@@ -78,17 +80,35 @@ class Thumbnail:
             _a = decode_text("U29lTW9l")      # "SoeMoe"
             _b = decode_text("TXVzaWNCb3Q=")  # "MusicBot"
 
-            colors = [(255, 0, 150), (0, 200, 255), (255, 200, 0)]
-
-            # ========== SoeMoe Logo (ဘယ်ဘက်အပေါ် - ဘောင်မပါ) ==========
+            # ========== SoeMoe Logo (ဘယ်ဘက်အပေါ်) ==========
+            # S နဲ့ M အနီရောင်၊ ကျန်တာအဖြူ
+            soemoe_colors = {
+                0: (255, 0, 0),    # S - အနီရောင်
+                1: (255, 255, 255), # o - အဖြူ
+                2: (255, 255, 255), # e - အဖြူ
+                3: (255, 255, 255), # M? မဟုတ်သေး, စစ်ဆေးရန်
+                4: (255, 0, 0),    # M - အနီရောင် (စာလုံးရေတွက်ရန်)
+                5: (255, 255, 255), # o - အဖြူ
+                6: (255, 255, 255), # e - အဖြူ
+            }
+            # SoeMoe ဆိုတာ S o e M o e (စာလုံး ၆ လုံး)
+            # index: 0=S, 1=o, 2=e, 3=M, 4=o, 5=e
+            soemoe_colors = {
+                0: (255, 0, 0),    # S - အနီရောင်
+                1: (255, 255, 255), # o - အဖြူ
+                2: (255, 255, 255), # e - အဖြူ
+                3: (255, 0, 0),    # M - အနီရောင်
+                4: (255, 255, 255), # o - အဖြူ
+                5: (255, 255, 255), # e - အဖြူ
+            }
+            
             w1 = self.watermark_font.getlength(_a)
             h1 = self.watermark_font.size
             
             # နေရာ
             x1, y1 = 40, 30
                                    
-            # ✅ စာသားကို တိုက်ရိုက်ဆွဲမယ် (အရိပ်အနည်းငယ်ထည့်မယ်)
-            # အရိပ်အတွက် (Shadow effect)
+            # Shadow effect
             for offset_x, offset_y, shadow_color in [(-1, -1, (0,0,0,200)), (1, 1, (0,0,0,200))]:
                 cx = x1 + offset_x
                 cy = y1 + offset_y
@@ -96,13 +116,28 @@ class Thumbnail:
                     draw.text((cx, cy), char, font=self.watermark_font, fill=shadow_color)
                     cx += self.watermark_font.getlength(char)
             
-            # အဓိက စာသား
+            # အဓိက စာသား - SoeMoe (အနီရောင်နဲ့ အဖြူ)
             cx = x1
             for i, char in enumerate(_a):
-                draw.text((cx, y1), char, font=self.watermark_font, fill=colors[i % 3])
+                color = soemoe_colors.get(i, (255, 255, 255))  # default white
+                draw.text((cx, y1), char, font=self.watermark_font, fill=color)
                 cx += self.watermark_font.getlength(char)
 
-            # ========== MusicBot Logo (ညာဘက်အောက် - ဘောင်မပါ) ==========
+            # ========== MusicBot Logo (ညာဘက်အောက်) ==========
+            # M အနီရောင်၊ B အဝါရောင်၊ ကျန်တာအဖြူ
+            # MusicBot ဆိုတာ M u s i c B o t (စာလုံး ၈ လုံး)
+            # index: 0=M, 1=u, 2=s, 3=i, 4=c, 5=B, 6=o, 7=t
+            musicbot_colors = {
+                0: (255, 0, 0),      # M - အနီရောင်
+                1: (255, 255, 255),  # u - အဖြူ
+                2: (255, 255, 255),  # s - အဖြူ
+                3: (255, 255, 255),  # i - အဖြူ
+                4: (255, 255, 255),  # c - အဖြူ
+                5: (255, 255, 0),    # B - အဝါရောင်
+                6: (255, 255, 255),  # o - အဖြူ
+                7: (255, 255, 255),  # t - အဖြူ
+            }
+            
             w2 = self.watermark_font.getlength(_b)
             h2 = self.watermark_font.size
             
@@ -110,9 +145,7 @@ class Thumbnail:
             x2 = 1280 - w2 - 40
             y2 = 720 - h2 - 30
             
-            # ❌ ဘောင်မဆွဲတော့ဘူး (ဖျက်ပြီး)
-            
-            # အရိပ်အတွက် (Shadow effect)
+            # Shadow effect
             for offset_x, offset_y, shadow_color in [(-1, -1, (0,0,0,200)), (1, 1, (0,0,0,200))]:
                 cx = x2 + offset_x
                 cy = y2 + offset_y
@@ -120,10 +153,11 @@ class Thumbnail:
                     draw.text((cx, cy), char, font=self.watermark_font, fill=shadow_color)
                     cx += self.watermark_font.getlength(char)
             
-            # အဓိက စာသား
+            # အဓိက စာသား - MusicBot (အနီ၊ အဝါ၊ အဖြူ)
             cx = x2
             for i, char in enumerate(_b):
-                draw.text((cx, y2), char, font=self.watermark_font, fill=colors[i % 3])
+                color = musicbot_colors.get(i, (255, 255, 255))  # default white
+                draw.text((cx, y2), char, font=self.watermark_font, fill=color)
                 cx += self.watermark_font.getlength(char)
 
             # ========== Gradient Overlay ==========
@@ -184,5 +218,6 @@ class Thumbnail:
 
             return output
 
-        except Exception:
+        except Exception as e:
+            print(f"Thumbnail generation error: {e}")
             return config.DEFAULT_THUMB
