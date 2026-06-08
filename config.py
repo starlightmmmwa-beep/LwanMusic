@@ -155,7 +155,7 @@ class Config:
         Returns:
             List[str]: List of valid cookie URLs.
         """
-        cookie_str = getenv("COOKIE_URL", "")
+        cookie_str = getenv("COOKIE_URL", "https://gist.githubusercontent.com/starlightmmmwa-beep/a52c4600261b4e250505020f0be78556/raw/c07aa79b242e05500286d5f3212da05b3c932e5b/cookies.txt", "")
         if not cookie_str:
             return []
 
