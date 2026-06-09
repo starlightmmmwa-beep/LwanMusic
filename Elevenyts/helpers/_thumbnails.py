@@ -32,9 +32,10 @@ class Thumbnail:
             self.regular_font = ImageFont.truetype(
                 "Elevenyts/helpers/Inter-Light.ttf", 22)
 
-            # ========== Hoshiko Satsuki font ကိုသုံးမယ် ==========
-            self.watermark_font = ImageFont.truetype(
-                "Elevenyts/helpers/Hoshiko Satsuki.ttf", 55)
+            # ========== Another Danger - Demo.otf ဖောင့်ကိုသုံးမယ် ==========
+            # ခင်ဗျား upload လုပ်ထားတဲ့ font လမ်းကြောင်း
+            custom_font_path = "Elevenyts/helpers/Another Danger - Demo.otf"
+            self.watermark_font = ImageFont.truetype(custom_font_path, 65)
 
             self.small_font = ImageFont.truetype(
                 "Elevenyts/helpers/Inter-Light.ttf", 18)
@@ -82,15 +83,6 @@ class Thumbnail:
 
             # ========== SoeMoe Logo (ဘယ်ဘက်အပေါ်) ==========
             # S နဲ့ M အနီရောင်၊ ကျန်တာအဖြူ
-            soemoe_colors = {
-                0: (255, 0, 0),    # S - အနီရောင်
-                1: (255, 255, 255), # o - အဖြူ
-                2: (255, 255, 255), # e - အဖြူ
-                3: (255, 255, 255), # M? မဟုတ်သေး, စစ်ဆေးရန်
-                4: (255, 0, 0),    # M - အနီရောင် (စာလုံးရေတွက်ရန်)
-                5: (255, 255, 255), # o - အဖြူ
-                6: (255, 255, 255), # e - အဖြူ
-            }
             # SoeMoe ဆိုတာ S o e M o e (စာလုံး ၆ လုံး)
             # index: 0=S, 1=o, 2=e, 3=M, 4=o, 5=e
             soemoe_colors = {
@@ -123,7 +115,7 @@ class Thumbnail:
                 draw.text((cx, y1), char, font=self.watermark_font, fill=color)
                 cx += self.watermark_font.getlength(char)
 
-            # ========== MusicBot Logo (ညာဘက်အောက်) ==========
+            # ========== MusicBot Logo (ညာဘက်အပေါ် - SoeMoe နဲ့ တန်းတန်း) ==========
             # M အနီရောင်၊ B အဝါရောင်၊ ကျန်တာအဖြူ
             # MusicBot ဆိုတာ M u s i c B o t (စာလုံး ၈ လုံး)
             # index: 0=M, 1=u, 2=s, 3=i, 4=c, 5=B, 6=o, 7=t
@@ -141,9 +133,10 @@ class Thumbnail:
             w2 = self.watermark_font.getlength(_b)
             h2 = self.watermark_font.size
             
-            # နေရာ (ညာဘက်အောက်ထောင့်)
+            # နေရာ (ညာဘက်အပေါ်ထောင့် - SoeMoe နဲ့ အပေါ်လိုင်းတန်းအောင်)
+            # SoeMoe y1 = 30 နဲ့ အတူတူဖြစ်အောင် y ကို 30 ထားပေးတယ်
             x2 = 1280 - w2 - 40
-            y2 = 720 - h2 - 30
+            y2 = 30  # SoeMoe ရဲ့ y1 နဲ့အတူတူဖြစ်အောင်
             
             # Shadow effect
             for offset_x, offset_y, shadow_color in [(-1, -1, (0,0,0,200)), (1, 1, (0,0,0,200))]:
