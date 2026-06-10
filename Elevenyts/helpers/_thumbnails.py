@@ -32,19 +32,17 @@ class Thumbnail:
             self.regular_font = ImageFont.truetype(
                 "Elevenyts/helpers/Inter-Light.ttf", 22)
 
-            # ========== Awesome.ttf ဖောင့်ကိုသုံးမယ် ==========
+            # ========== Awesome.ttf (Wingdings သင်္ကေတများပါတဲ့ ဖောင့်) ==========
             awesome_font_path = "Elevenyts/helpers/Awesome.ttf"
-            self.watermark_font = ImageFont.truetype(awesome_font_path, 65)
-            
-            # သေးငယ်တဲ့ ™ နဲ့ ® အတွက် သေးငယ်တဲ့ font
-            self.symbol_font = ImageFont.truetype(awesome_font_path, 35)
+            self.main_font = ImageFont.truetype(awesome_font_path, 65)  # စာသားအတွက်
+            self.symbol_font = ImageFont.truetype(awesome_font_path, 55)  # သင်္ကေတအတွက်
 
             self.small_font = ImageFont.truetype(
                 "Elevenyts/helpers/Inter-Light.ttf", 18)
 
         except OSError as e:
             print(f"Font loading error: {e}")
-            self.title_font = self.regular_font = self.watermark_font = self.symbol_font = self.small_font = ImageFont.load_default()
+            self.title_font = self.regular_font = self.main_font = self.symbol_font = self.small_font = ImageFont.load_default()
 
     async def save_thumb(self, output_path: str, url: str) -> str:
         async with aiohttp.ClientSession() as session:
@@ -70,24 +68,6 @@ class Thumbnail:
         except Exception:
             return config.DEFAULT_THUMB
 
-    def _draw_word_with_color(self, draw, word, x, y, font, color_map, start_index=0):
-        """
-        စကားလုံးတစ်လုံးဆွဲပေးမယ် (စာလုံးကြား space မပါ)
-        color_map: {relative_index: color}
-        """
-        cx = x
-        for i, char in enumerate(word):
-            color = color_map.get(start_index + i, (255, 255, 255))
-            
-            # Shadow effect
-            for offset_x, offset_y, shadow_color in [(-1, -1, (0,0,0,200)), (1, 1, (0,0,0,200))]:
-                draw.text((cx + offset_x, y + offset_y), char, font=font, fill=shadow_color)
-            
-            draw.text((cx, y), char, font=font, fill=color)
-            cx += font.getlength(char)
-        
-        return cx
-
     def _generate_sync(self, temp: str, output: str, song: Track, size=(1280, 720)) -> str:
         try:
             with Image.open(temp) as temp_img:
@@ -98,61 +78,61 @@ class Thumbnail:
             bg = bg.filter(ImageFilter.GaussianBlur(2))
             draw = ImageDraw.Draw(bg)
 
-            # ========== "Soe Moe" (Soe တစ်စု၊ နောက် space၊ Moe တစ်စု) ==========
-            word1 = "Soe"
-            word2 = "Moe"
+            # ========== "Soe Moe" +  (U+F051) ==========
+            symbol1 = "\uf051"  # 
             
-            # Soe ထဲက S ကို နက်ပြာ (index 0)
-            # Moe ထဲက M ကို နက်ပြာ (index 0 relative to word2)
             x1, y1 = 40, 30
             
-            # "Soe" ဆွဲမယ်
-            cx = self._draw_word_with_color(draw, word1, x1, y1, self.watermark_font, {0: (0, 0, 255)})
+            # "Soe Moe" ဆွဲမယ် (S နဲ့ M ကို အနီ)
+            cx = x1
+            text = "Soe Moe"
+            for i, char in enumerate(text):
+                if char in ['S', 'M']:
+                    color = (255, 0, 0)  # အနီ
+                else:
+                    color = (255, 255, 255)  # အဖြူ
+                
+                for ox, oy, sc in [(-1,-1,(0,0,0,200)), (1,1,(0,0,0,200))]:
+                    draw.text((cx+ox, y1+oy), char, font=self.main_font, fill=sc)
+                draw.text((cx, y1), char, font=self.main_font, fill=color)
+                cx += self.main_font.getlength(char)
             
-            # Space ထည့်မယ် (စကားလုံးကြား)
-            space_width = self.watermark_font.getlength(" ")
-            cx += space_width
-            
-            # "Moe" ဆွဲမယ် (M ကို နက်ပြာ)
-            cx = self._draw_word_with_color(draw, word2, cx, y1, self.watermark_font, {0: (0, 0, 255)})
-            
-            # ™ သင်္ကေတ (Moe နောက်မှာ)
-            tm_x = cx
-            tm_y = y1 - 5
-            for offset_x, offset_y, shadow_color in [(-1, -1, (0,0,0,200)), (1, 1, (0,0,0,200))]:
-                draw.text((tm_x + offset_x, tm_y + offset_y), "™", font=self.symbol_font, fill=shadow_color)
-            draw.text((tm_x, tm_y), "™", font=self.symbol_font, fill=(255, 215, 0))
+            # သင်္ကေတ ထည့်မယ် () - မူရင်းအတိုင်း (အပေါ်မတင်ဘူး)
+            sym_x = cx
+            sym_y = y1  # စာသားနဲ့ တစ်တန်းတည်း
+            for ox, oy, sc in [(-1,-1,(0,0,0,200)), (1,1,(0,0,0,200))]:
+                draw.text((sym_x+ox, sym_y+oy), symbol1, font=self.symbol_font, fill=sc)
+            draw.text((sym_x, sym_y), symbol1, font=self.symbol_font, fill=(255, 215, 0))  # အဝါရောင်
 
-            # ========== "Music Bot" (Music တစ်စု၊ နောက် space၊ Bot တစ်စု) ==========
-            word3 = "Music"
-            word4 = "Bot"
+            # ========== "Music Bot" +  (U+F04F) ==========
+            symbol2 = "\uf04f"  # 
             
-            # Music ထဲက M ကို အနီရောင် (index 0)
-            # Bot ထဲက B ကို အဝါရောင် (index 0 relative to word4)
-            
-            w3 = self.watermark_font.getlength(word3)
-            w4 = self.watermark_font.getlength(word4)
-            space_w = self.watermark_font.getlength(" ")
-            total_w = w3 + space_w + w4
-            
-            x2 = 1280 - total_w - 40
+            # "Music Bot" ရဲ့ width တွက်မယ်
+            text2 = "Music Bot"
+            w2 = self.main_font.getlength(text2)
+            x2 = 1280 - w2 - 40
             y2 = 30
             
-            # "Music" ဆွဲမယ် (M အနီ)
-            cx = self._draw_word_with_color(draw, word3, x2, y2, self.watermark_font, {0: (255, 0, 0)})
+            cx = x2
+            for i, char in enumerate(text2):
+                if char == 'M':
+                    color = (255, 0, 0)  # M အနီ
+                elif char == 'B':
+                    color = (255, 255, 0)  # B အဝါ
+                else:
+                    color = (255, 255, 255)  # အဖြူ
+                
+                for ox, oy, sc in [(-1,-1,(0,0,0,200)), (1,1,(0,0,0,200))]:
+                    draw.text((cx+ox, y2+oy), char, font=self.main_font, fill=sc)
+                draw.text((cx, y2), char, font=self.main_font, fill=color)
+                cx += self.main_font.getlength(char)
             
-            # Space
-            cx += space_width
-            
-            # "Bot" ဆွဲမယ် (B အဝါ)
-            cx = self._draw_word_with_color(draw, word4, cx, y2, self.watermark_font, {0: (255, 255, 0)})
-            
-            # ® သင်္ကေတ (Bot နောက်မှာ)
-            reg_x = cx
-            reg_y = y2 - 5
-            for offset_x, offset_y, shadow_color in [(-1, -1, (0,0,0,200)), (1, 1, (0,0,0,200))]:
-                draw.text((reg_x + offset_x, reg_y + offset_y), "®", font=self.symbol_font, fill=shadow_color)
-            draw.text((reg_x, reg_y), "®", font=self.symbol_font, fill=(255, 215, 0))
+            # သင်္ကေတ ထည့်မယ် () - မူရင်းအတိုင်း (အပေါ်မတင်ဘူး)
+            sym2_x = cx
+            sym2_y = y2  # စာသားနဲ့ တစ်တန်းတည်း
+            for ox, oy, sc in [(-1,-1,(0,0,0,200)), (1,1,(0,0,0,200))]:
+                draw.text((sym2_x+ox, sym2_y+oy), symbol2, font=self.symbol_font, fill=sc)
+            draw.text((sym2_x, sym2_y), symbol2, font=self.symbol_font, fill=(255, 215, 0))
 
             # ========== Gradient Overlay ==========
             gradient = Image.new("L", (1, 300))
