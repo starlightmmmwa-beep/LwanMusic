@@ -32,10 +32,10 @@ class Thumbnail:
             self.regular_font = ImageFont.truetype(
                 "Elevenyts/helpers/Inter-Light.ttf", 22)
 
-            # ========== Awesome.ttf (Wingdings သင်္ကေတများပါတဲ့ ဖောင့်) ==========
+            # ========== Awesome.ttf ==========
             awesome_font_path = "Elevenyts/helpers/Awesome.ttf"
-            self.main_font = ImageFont.truetype(awesome_font_path, 65)  # စာသားအတွက်
-            self.symbol_font = ImageFont.truetype(awesome_font_path, 55)  # သင်္ကေတအတွက်
+            self.main_font = ImageFont.truetype(awesome_font_path, 50)
+            self.symbol_font = ImageFont.truetype(awesome_font_path, 50)
 
             self.small_font = ImageFont.truetype(
                 "Elevenyts/helpers/Inter-Light.ttf", 18)
@@ -78,61 +78,62 @@ class Thumbnail:
             bg = bg.filter(ImageFilter.GaussianBlur(2))
             draw = ImageDraw.Draw(bg)
 
-            # ========== "Soe Moe" +  (U+F051) ==========
-            symbol1 = "\uf051"  # 
+            # ========== "Soe Moe" +  (U+F04F) ==========
+            # သင်္ကေတကို လဲလှယ်လိုက်ပြီ (အရင်က  ကနေ  ကိုပြောင်း)
+            symbol1 = "\uf04f"  #  (ဒီသင်္ကေတကို Soe Moe နောက်မှာ)
             
-            x1, y1 = 40, 30
+            # အကုန်လုံးကို အပေါ်နည်းနည်းတိုးမယ် (y ကို 30 ကနေ 20 ကိုပြောင်း)
+            x1, y1 = 40, 20  # 50 ကနေ 20 ကို ပြောင်း (အပေါ်ကို 30 တိုး)
             
-            # "Soe Moe" ဆွဲမယ် (S နဲ့ M ကို အနီ)
             cx = x1
             text = "Soe Moe"
             for i, char in enumerate(text):
                 if char in ['S', 'M']:
-                    color = (255, 0, 0)  # အနီ
+                    color = (255, 0, 0)
                 else:
-                    color = (255, 255, 255)  # အဖြူ
+                    color = (255, 255, 255)
                 
                 for ox, oy, sc in [(-1,-1,(0,0,0,200)), (1,1,(0,0,0,200))]:
                     draw.text((cx+ox, y1+oy), char, font=self.main_font, fill=sc)
                 draw.text((cx, y1), char, font=self.main_font, fill=color)
                 cx += self.main_font.getlength(char)
             
-            # သင်္ကေတ ထည့်မယ် () - မူရင်းအတိုင်း (အပေါ်မတင်ဘူး)
+            # သင်္ကေတ - မီးခိုးရောင် (Gray)
             sym_x = cx
-            sym_y = y1  # စာသားနဲ့ တစ်တန်းတည်း
+            sym_y = y1
             for ox, oy, sc in [(-1,-1,(0,0,0,200)), (1,1,(0,0,0,200))]:
                 draw.text((sym_x+ox, sym_y+oy), symbol1, font=self.symbol_font, fill=sc)
-            draw.text((sym_x, sym_y), symbol1, font=self.symbol_font, fill=(255, 215, 0))  # အဝါရောင်
+            draw.text((sym_x, sym_y), symbol1, font=self.symbol_font, fill=(128, 128, 128))  # မီးခိုးရောင်
 
-            # ========== "Music Bot" +  (U+F04F) ==========
-            symbol2 = "\uf04f"  # 
+            # ========== "Music Bot" +  (U+F051) ==========
+            # သင်္ကေတကို လဲလှယ်လိုက်ပြီ (အရင်က  ကနေ  ကိုပြောင်း)
+            symbol2 = "\uf051"  #  (ဒီသင်္ကေတကို Music Bot နောက်မှာ)
             
-            # "Music Bot" ရဲ့ width တွက်မယ်
             text2 = "Music Bot"
             w2 = self.main_font.getlength(text2)
             x2 = 1280 - w2 - 40
-            y2 = 30
+            y2 = 20  # 50 ကနေ 20 ကို ပြောင်း (အပေါ်ကို 30 တိုး)
             
             cx = x2
             for i, char in enumerate(text2):
                 if char == 'M':
-                    color = (255, 0, 0)  # M အနီ
+                    color = (255, 0, 0)
                 elif char == 'B':
-                    color = (255, 255, 0)  # B အဝါ
+                    color = (255, 255, 0)
                 else:
-                    color = (255, 255, 255)  # အဖြူ
+                    color = (255, 255, 255)
                 
                 for ox, oy, sc in [(-1,-1,(0,0,0,200)), (1,1,(0,0,0,200))]:
                     draw.text((cx+ox, y2+oy), char, font=self.main_font, fill=sc)
                 draw.text((cx, y2), char, font=self.main_font, fill=color)
                 cx += self.main_font.getlength(char)
             
-            # သင်္ကေတ ထည့်မယ် () - မူရင်းအတိုင်း (အပေါ်မတင်ဘူး)
+            # သင်္ကေတ - မီးခိုးရောင် (Gray)
             sym2_x = cx
-            sym2_y = y2  # စာသားနဲ့ တစ်တန်းတည်း
+            sym2_y = y2
             for ox, oy, sc in [(-1,-1,(0,0,0,200)), (1,1,(0,0,0,200))]:
                 draw.text((sym2_x+ox, sym2_y+oy), symbol2, font=self.symbol_font, fill=sc)
-            draw.text((sym2_x, sym2_y), symbol2, font=self.symbol_font, fill=(255, 215, 0))
+            draw.text((sym2_x, sym2_y), symbol2, font=self.symbol_font, fill=(80, 80, 80))  # မီးခိုးရောင်
 
             # ========== Gradient Overlay ==========
             gradient = Image.new("L", (1, 300))
