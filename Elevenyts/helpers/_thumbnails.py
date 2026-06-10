@@ -98,12 +98,12 @@ class Thumbnail:
                 draw.text((cx, y1), char, font=self.main_font, fill=color)
                 cx += self.main_font.getlength(char)
             
-            # သင်္ကေတ - မီးခိုးရောင် (Gray)
+            # သင်္ကေတ
             sym_x = cx
             sym_y = y1
             for ox, oy, sc in [(-1,-1,(0,0,0,200)), (1,1,(0,0,0,200))]:
                 draw.text((sym_x+ox, sym_y+oy), symbol1, font=self.symbol_font, fill=sc)
-            draw.text((sym_x, sym_y), symbol1, font=self.symbol_font, fill=(128, 128, 128))  # မီးခိုးရောင်
+            draw.text((sym_x, sym_y), symbol1, font=self.symbol_font, fill=(0, 0, 0)) 
 
             # ========== "Music Bot" +  (U+F051) ==========
             # သင်္ကေတကို လဲလှယ်လိုက်ပြီ (အရင်က  ကနေ  ကိုပြောင်း)
@@ -128,12 +128,12 @@ class Thumbnail:
                 draw.text((cx, y2), char, font=self.main_font, fill=color)
                 cx += self.main_font.getlength(char)
             
-            # သင်္ကေတ - မီးခိုးရောင် (Gray)
+            # သင်္ကေတ 
             sym2_x = cx
             sym2_y = y2
             for ox, oy, sc in [(-1,-1,(0,0,0,200)), (1,1,(0,0,0,200))]:
                 draw.text((sym2_x+ox, sym2_y+oy), symbol2, font=self.symbol_font, fill=sc)
-            draw.text((sym2_x, sym2_y), symbol2, font=self.symbol_font, fill=(80, 80, 80))  # မီးခိုးရောင်
+            draw.text((sym2_x, sym2_y), symbol2, font=self.symbol_font, fill=(0, 0, 0))  
 
             # ========== Gradient Overlay ==========
             gradient = Image.new("L", (1, 300))
