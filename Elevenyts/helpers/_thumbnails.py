@@ -32,17 +32,19 @@ class Thumbnail:
             self.regular_font = ImageFont.truetype(
                 "Elevenyts/helpers/Inter-Light.ttf", 22)
 
-            # ========== Another Danger - Demo.otf ဖောင့်ကိုသုံးမယ် ==========
-            # ခင်ဗျား upload လုပ်ထားတဲ့ font လမ်းကြောင်း
+            # ========== Another Danger - Demo.otf ==========
             custom_font_path = "Elevenyts/helpers/Another Danger - Demo.otf"
             self.watermark_font = ImageFont.truetype(custom_font_path, 65)
+            
+            # အကြီးစာလုံးအတွက် နည်းနည်းပိုကြီးတဲ့ font
+            self.watermark_font_large = ImageFont.truetype(custom_font_path, 78)  # 65 -> 78 (20% bigger)
 
             self.small_font = ImageFont.truetype(
                 "Elevenyts/helpers/Inter-Light.ttf", 18)
 
         except OSError as e:
             print(f"Font loading error: {e}")
-            self.title_font = self.regular_font = self.watermark_font = self.small_font = ImageFont.load_default()
+            self.title_font = self.regular_font = self.watermark_font = self.watermark_font_large = self.small_font = ImageFont.load_default()
 
     async def save_thumb(self, output_path: str, url: str) -> str:
         async with aiohttp.ClientSession() as session:
@@ -68,6 +70,34 @@ class Thumbnail:
         except Exception:
             return config.DEFAULT_THUMB
 
+    def _draw_colored_text_with_variable_size(self, draw, text, x, y, base_font, large_font, color_map, shadow=True):
+        """
+        စာလုံးတစ်လုံးချင်းဆွဲပါ - အချို့စာလုံးကို ပိုကြီးအောင်ဆွဲပေးမယ်
+        color_map: {index: (color, use_large_font)} 
+        """
+        cx = x
+        for i, char in enumerate(text):
+            # ဒီစာလုံးအတွက် font နဲ့ color ရွေးမယ်
+            if i in color_map:
+                color, use_large = color_map[i]
+                font = large_font if use_large else base_font
+            else:
+                color = (255, 255, 255)  # default white
+                font = base_font
+            
+            # Shadow effect
+            if shadow:
+                for offset_x, offset_y, shadow_color in [(-1, -1, (0,0,0,200)), (1, 1, (0,0,0,200))]:
+                    draw.text((cx + offset_x, y + offset_y), char, font=font, fill=shadow_color)
+            
+            # အဓိကစာသား
+            draw.text((cx, y), char, font=font, fill=color)
+            
+            # နောက်စာလုံးနေရာရွှေ့ဖို့ - သုံးထားတဲ့ font ရဲ့ width အတိုင်း
+            cx += font.getlength(char)
+        
+        return cx  # နောက်ဆုံး x coordinate ပြန်ပေးမယ်
+
     def _generate_sync(self, temp: str, output: str, song: Track, size=(1280, 720)) -> str:
         try:
             with Image.open(temp) as temp_img:
@@ -78,80 +108,48 @@ class Thumbnail:
             bg = bg.filter(ImageFilter.GaussianBlur(2))
             draw = ImageDraw.Draw(bg)
 
-            _a = decode_text("U29lTW9l")      # "SoeMoe"
-            _b = decode_text("TXVzaWNCb3Q=")  # "MusicBot"
-
-            # ========== SoeMoe Logo (ဘယ်ဘက်အပေါ်) ==========
-            # S နဲ့ M အနီရောင်၊ ကျန်တာအဖြူ
-            # SoeMoe ဆိုတာ S o e M o e (စာလုံး ၆ လုံး)
-            # index: 0=S, 1=o, 2=e, 3=M, 4=o, 5=e
-            soemoe_colors = {
-                0: (255, 0, 0),    # S - အနီရောင်
-                1: (255, 255, 255), # o - အဖြူ
-                2: (255, 255, 255), # e - အဖြူ
-                3: (255, 0, 0),    # M - အနီရောင်
-                4: (255, 255, 255), # o - အဖြူ
-                5: (255, 255, 255), # e - အဖြူ
+            _a = decode_text("U29lTW9l")      # "SoeMoe" -> အခု "SOE MOE" လိုချင်တယ်
+            _b = decode_text("TXVzaWNCb3Q=")  # "MusicBot" -> အခု "MUSIC BOT" လိုချင်တယ်
+            
+            # ========== "SOE MOE" (space ပါအောင်) ==========
+            # မူရင်း "SoeMoe" အစား "SOE MOE" ကို တိုက်ရိုက်သုံးမယ်
+            text_a = "SOE MOE"
+            # S (index0) နဲ့ M (index4) ကို အနီရောင် + ကြီးအောင်
+            # index: 0=S,1=O,2=E,3=(space),4=M,5=O,6=E
+            color_map_a = {
+                0: ((255, 0, 0), True),    # S - အနီရောင် + ကြီး
+                4: ((255, 0, 0), True),    # M - အနီရောင် + ကြီး
+                # space ကို ဘာမှမဆွဲဘူး (ဒါပေမယ့် နေရာယူမယ်)
             }
             
-            w1 = self.watermark_font.getlength(_a)
-            h1 = self.watermark_font.size
-            
-            # နေရာ
+            w1 = self.watermark_font.getlength(text_a)  # rough estimate
             x1, y1 = 40, 30
-                                   
-            # Shadow effect
-            for offset_x, offset_y, shadow_color in [(-1, -1, (0,0,0,200)), (1, 1, (0,0,0,200))]:
-                cx = x1 + offset_x
-                cy = y1 + offset_y
-                for i, char in enumerate(_a):
-                    draw.text((cx, cy), char, font=self.watermark_font, fill=shadow_color)
-                    cx += self.watermark_font.getlength(char)
             
-            # အဓိက စာသား - SoeMoe (အနီရောင်နဲ့ အဖြူ)
-            cx = x1
-            for i, char in enumerate(_a):
-                color = soemoe_colors.get(i, (255, 255, 255))  # default white
-                draw.text((cx, y1), char, font=self.watermark_font, fill=color)
-                cx += self.watermark_font.getlength(char)
+            # စာဆွဲမယ် (space ပါတဲ့အတွက် ပုံမှန် draw.text မသုံးဘူး)
+            self._draw_colored_text_with_variable_size(
+                draw, text_a, x1, y1, 
+                self.watermark_font, self.watermark_font_large, 
+                color_map_a, shadow=True
+            )
 
-            # ========== MusicBot Logo (ညာဘက်အပေါ် - SoeMoe နဲ့ တန်းတန်း) ==========
-            # M အနီရောင်၊ B အဝါရောင်၊ ကျန်တာအဖြူ
-            # MusicBot ဆိုတာ M u s i c B o t (စာလုံး ၈ လုံး)
-            # index: 0=M, 1=u, 2=s, 3=i, 4=c, 5=B, 6=o, 7=t
-            musicbot_colors = {
-                0: (255, 0, 0),      # M - အနီရောင်
-                1: (255, 255, 255),  # u - အဖြူ
-                2: (255, 255, 255),  # s - အဖြူ
-                3: (255, 255, 255),  # i - အဖြူ
-                4: (255, 255, 255),  # c - အဖြူ
-                5: (255, 255, 0),    # B - အဝါရောင်
-                6: (255, 255, 255),  # o - အဖြူ
-                7: (255, 255, 255),  # t - အဖြူ
+            # ========== "MUSIC BOT" (space ပါအောင်) ==========
+            text_b = "MUSIC BOT"
+            # M (index0) အနီရောင်+ကြီး၊ B (index6) အဝါရောင်+ကြီး
+            # index: 0=M,1=U,2=S,3=I,4=C,5=(space),6=B,7=O,8=T
+            color_map_b = {
+                0: ((255, 0, 0), True),      # M - အနီရောင် + ကြီး
+                6: ((255, 255, 0), True),    # B - အဝါရောင် + ကြီး
             }
             
-            w2 = self.watermark_font.getlength(_b)
-            h2 = self.watermark_font.size
-            
-            # နေရာ (ညာဘက်အပေါ်ထောင့် - SoeMoe နဲ့ အပေါ်လိုင်းတန်းအောင်)
-            # SoeMoe y1 = 30 နဲ့ အတူတူဖြစ်အောင် y ကို 30 ထားပေးတယ်
+            w2 = self.watermark_font.getlength(text_b)
             x2 = 1280 - w2 - 40
-            y2 = 30  # SoeMoe ရဲ့ y1 နဲ့အတူတူဖြစ်အောင်
+            y2 = 30  # SoeMoe နဲ့အတူတူ
             
-            # Shadow effect
-            for offset_x, offset_y, shadow_color in [(-1, -1, (0,0,0,200)), (1, 1, (0,0,0,200))]:
-                cx = x2 + offset_x
-                cy = y2 + offset_y
-                for i, char in enumerate(_b):
-                    draw.text((cx, cy), char, font=self.watermark_font, fill=shadow_color)
-                    cx += self.watermark_font.getlength(char)
-            
-            # အဓိက စာသား - MusicBot (အနီ၊ အဝါ၊ အဖြူ)
-            cx = x2
-            for i, char in enumerate(_b):
-                color = musicbot_colors.get(i, (255, 255, 255))  # default white
-                draw.text((cx, y2), char, font=self.watermark_font, fill=color)
-                cx += self.watermark_font.getlength(char)
+            self._draw_colored_text_with_variable_size(
+                draw, text_b, x2, y2,
+                self.watermark_font, self.watermark_font_large,
+                color_map_b, shadow=True
+            )
 
             # ========== Gradient Overlay ==========
             gradient = Image.new("L", (1, 300))
