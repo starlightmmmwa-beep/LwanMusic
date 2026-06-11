@@ -89,8 +89,7 @@ class Config:
         # Parse space-separated cookie URLs for age-restricted content
         self.COOKIES_URL: List[str] = self._parse_cookies()
 
-        # ============ IMAGE URLS (ပုံ ၅ ပုံ လည်ပတ်သုံးရန်) ============
-        # ပုံ ၅ ပုံရဲ့ raw URL စာရင်း
+        # ============ IMAGE URLS (ပုံ ၅ ပုံ အလှည့်ကျသုံးရန်) ============
         self.IMAGE_LIST: List[str] = [
             "https://github.com/starlightmwamm-droid/Photo/blob/main/Lwan/LwanMusic%20(1).png?raw=true",
             "https://github.com/starlightmwamm-droid/Photo/blob/main/Lwan/LwanMusic%20(2).png?raw=true",
@@ -98,6 +97,9 @@ class Config:
             "https://github.com/starlightmwamm-droid/Photo/blob/main/Lwan/LwanMusic%20(4).png?raw=true",
             "https://github.com/starlightmwamm-droid/Photo/blob/main/Lwan/LwanMusic%20(5).png?raw=true",
         ]
+        
+        # Image rotation counter (ပုံအလှည့်ကျပြဖို့)
+        self._image_index = 0
 
         # ============ MODERATION ============
         # List of usernames to exclude from admin mentions
@@ -172,48 +174,47 @@ class Config:
 
     # ============ IMAGE ROTATION METHODS ============
     
-    def get_random_image(self) -> str:
-        """
-        ကျပန်းပုံတစ်ပုံကို ပြန်ပေးမယ်
-        ဥပမာ - /ping, /help, /start (group) command တွေမှာ သုံးလို့ရအောင်
-        """
-        return random.choice(self.IMAGE_LIST)
-
-    def get_chat_image(self, chat_id: int, style: str = "ping") -> str:
-        """
-        Chat ID ပေါ်မူတည်ပြီး တည်ငြိမ်တဲ့ပုံကို ပြန်ပေးမယ်
-        (တူညီတဲ့ chat မှာ တူညီတဲ့ပုံပဲ ပြသချင်ရင် သုံးပါ)
-        
-        Args:
-            chat_id: Telegram chat ID
-            style: ပုံအမျိုးအစား (ping, start, radio) - မတူအောင် ခွဲချင်ရင် သုံးပါ
-        """
-        # chat_id နဲ့ style ပေါင်းပြီး seed လုပ်မယ် (တူညီတဲ့ chat မှာ တူညီတဲ့ပုံရဖို့)
-        seed = hash(f"{chat_id}_{style}")
-        random.seed(seed)
-        chosen = random.choice(self.IMAGE_LIST)
-        random.seed()  # seed ကို ပြန်ပုံမှန်ဖြစ်အောင်
-        return chosen
+    def get_next_image(self) -> str:
+        """ပုံတစ်ပုံချင်းစီ အလှည့်ကျပြန်ပေးမယ် (တစ်လှည့်စီ)"""
+        image = self.IMAGE_LIST[self._image_index % len(self.IMAGE_LIST)]
+        self._image_index += 1
+        return image
+    
+    def get_next_ping_image(self) -> str:
+        """Ping command အတွက် အလှည့်ကျပုံ"""
+        return self.get_next_image()
+    
+    def get_next_start_image(self) -> str:
+        """Start command အတွက် အလှည့်ကျပုံ"""
+        return self.get_next_image()
+    
+    def get_next_radio_image(self) -> str:
+        """Radio command အတွက် အလှည့်ကျပုံ"""
+        return self.get_next_image()
+    
+    def reset_image_rotation(self) -> None:
+        """ပုံအလှည့်ကို ပြန်စမယ် (bot restart ချိန်မှာ သုံးလို့ရ)"""
+        self._image_index = 0
 
     @property
     def DEFAULT_THUMB(self) -> str:
-        """Default thumbnail - သီချင်း/Video မှာ ကိုယ်ပိုင် thumbnail မပါရင်သုံးတဲ့ ကျပန်းပုံ"""
-        return random.choice(self.IMAGE_LIST)
+        """Default thumbnail - အလှည့်ကျပုံ"""
+        return self.get_next_image()
 
     @property
     def PING_IMG(self) -> str:
-        """Ping command အတွက် ကျပန်းပုံ"""
-        return random.choice(self.IMAGE_LIST)
+        """Ping command အတွက် အလှည့်ကျပုံ"""
+        return self.get_next_ping_image()
 
     @property
     def START_IMG(self) -> str:
-        """Start command အတွက် ကျပန်းပုံ"""
-        return random.choice(self.IMAGE_LIST)
+        """Start command အတွက် အလှည့်ကျပုံ"""
+        return self.get_next_start_image()
 
     @property
     def RADIO_IMG(self) -> str:
-        """Radio command အတွက် ကျပန်းပုံ"""
-        return random.choice(self.IMAGE_LIST)
+        """Radio command အတွက် အလှည့်ကျပုံ"""
+        return self.get_next_radio_image()
 
 
 # Global config instance
