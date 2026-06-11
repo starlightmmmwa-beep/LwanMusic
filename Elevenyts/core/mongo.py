@@ -263,7 +263,7 @@ class MongoDB:
         return self.chats
 
     async def get_chats_count(self) -> int:
-            """Get total number of chats the bot has served."""
+        """Get total number of chats the bot has served."""
         return len(await self.get_chats())
 
     # LANGUAGE METHODS
