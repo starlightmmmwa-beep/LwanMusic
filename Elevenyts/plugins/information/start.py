@@ -66,11 +66,17 @@ async def start(_, message: types.Message):
     private = message.chat.type == enums.ChatType.PRIVATE
 
     # Choose appropriate welcome message
-    _text = (
-        message.lang["start_pm"].format(message.from_user.first_name, app.name)
-        if private
-        else message.lang["start_gp"].format(app.name)
-    )
+    if private:
+        # Get total groups count from database
+        total_groups = await db.get_chats_count()
+        _text = message.lang["start_pm"].format(
+            message.from_user.first_name, 
+            app.name, 
+            total_groups
+        )
+    else:
+        _text = message.lang["start_gp"].format(app.name)
+    # ======================================================
 
     key = buttons.start_key(message.lang, private)
     try:
