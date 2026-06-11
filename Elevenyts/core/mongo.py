@@ -262,6 +262,10 @@ class MongoDB:
             self.chats.extend([chat["_id"] async for chat in self.chatsdb.find()])
         return self.chats
 
+    async def get_chats_count(self) -> int:
+            """Get total number of chats the bot has served."""
+        return len(await self.get_chats())
+
     # LANGUAGE METHODS
     async def set_lang(self, chat_id: int, lang_code: str):
         await self.langdb.update_one(
